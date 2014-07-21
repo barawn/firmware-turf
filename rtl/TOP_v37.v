@@ -46,6 +46,15 @@ module TOP_v37(
 		// input [`NUM_SURFS*2-1:0] SURF_IN		
     );
 
+	parameter DEBUG = "YES";
+	parameter [3:0] VER_MONTH = 7;
+	parameter [7:0] VER_DAY = 21;
+	parameter [3:0] VER_MAJOR = 3;
+	parameter [3:0] VER_MINOR = 7;
+	parameter [3:0] VER_REV = 0;
+	parameter [3:0] VER_BOARDREV = 0;
+	parameter [31:0] VERSION = {VER_BOARDREV,VER_MONTH,VER_DAY,VER_MAJOR,VER_MINOR,VER_REV};
+
 	// Infrastructure.
 	wire [`NUM_SURFS*4-1:0] L1;
 	wire [`NUM_SURFS*4-1:0] HOLD;
@@ -103,7 +112,7 @@ module TOP_v37(
 	
 	wire soft_or_ext = (TRIG_IN && !dis_ext_trig) || soft_trig;
 	
-	TURF_REGISTER_INTERFACE_v2 u_turf_registers(.clk_i(CLK33),
+	TURF_REGISTER_INTERFACE_v2 #(.VERSION(VERSION)) u_turf_registers(.clk_i(CLK33),
 															  .scal_dat_i(scal_dat),
 															  .scal_addr_o(scal_addr),
 															  .event_dat_i(event_dat),
@@ -168,9 +177,13 @@ module TOP_v37(
   assign SURF_REF_PULSE = {`NUM_SURFS{TRIG_IN}};
 
   wire [35:0] ila_control;
-  (* box_type = "black_box" *)
-  chipscope_icon u_icon(.CONTROL0(ila_control));
-  (* box_type = "black_box" *)
-  turf_ila u_ila(.CONTROL(ila_control),.CLK(CLK33),.TRIG0(register_debug));
-													  
+	generate
+		if (DEBUG == "YES") begin : CS_CORES
+		  (* box_type = "black_box" *)
+		  chipscope_icon u_icon(.CONTROL0(ila_control));
+		  (* box_type = "black_box" *)
+		  turf_ila u_ila(.CONTROL(ila_control),.CLK(CLK33),.TRIG0(register_debug));
+		end
+	endgenerate
+	
 endmodule

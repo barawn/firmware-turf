@@ -48,6 +48,9 @@ module ANITA3_simple_trigger_map(
 	(* IOB = "TRUE" *)
 	reg [NUM_PHI-1:0] H_pol_phi_reg = {NUM_PHI{1'b0}};
 	
+	reg [NUM_PHI-1:0] V_pol_phi_pipe = {NUM_PHI{1'b0}};
+	reg [NUM_PHI-1:0] H_pol_phi_pipe = {NUM_PHI{1'b0}};
+	
 	// This is totally made up, since no current mapping exists.
 	// Our first attempt, using SURFs 0->7, sucks. Let's try
 	// using SURFs 2-9: if my guess is right, these should wrap
@@ -100,11 +103,14 @@ module ANITA3_simple_trigger_map(
 					
 				if (H_pol_mask[j]) H_pol_phi_reg[j] <= 0;
 				else H_pol_phi_reg[j] <= H_pol_phi_in[j];
+				
+				V_pol_phi_pipe <= V_pol_phi_reg;
+				H_pol_phi_pipe <= H_pol_phi_reg;
 			end
 		end
 	endgenerate
 
-	assign V_pol_phi_o = V_pol_phi_reg;
-	assign H_pol_phi_o = H_pol_phi_reg;
+	assign V_pol_phi_o = V_pol_phi_pipe;
+	assign H_pol_phi_o = H_pol_phi_pipe;
 	
 endmodule
