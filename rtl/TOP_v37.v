@@ -48,10 +48,10 @@ module TOP_v37(
 
 	parameter DEBUG = "YES";
 	parameter [3:0] VER_MONTH = 7;
-	parameter [7:0] VER_DAY = 21;
+	parameter [7:0] VER_DAY = 22;
 	parameter [3:0] VER_MAJOR = 3;
 	parameter [3:0] VER_MINOR = 7;
-	parameter [3:0] VER_REV = 0;
+	parameter [3:0] VER_REV = 1;
 	parameter [3:0] VER_BOARDREV = 0;
 	parameter [31:0] VERSION = {VER_BOARDREV,VER_MONTH,VER_DAY,VER_MAJOR,VER_MINOR,VER_REV};
 
@@ -112,6 +112,8 @@ module TOP_v37(
 	
 	wire soft_or_ext = (TRIG_IN && !dis_ext_trig) || soft_trig;
 	
+	wire event_ready;
+	
 	TURF_REGISTER_INTERFACE_v2 #(.VERSION(VERSION)) u_turf_registers(.clk_i(CLK33),
 															  .scal_dat_i(scal_dat),
 															  .scal_addr_o(scal_addr),
@@ -171,7 +173,8 @@ module TOP_v37(
 													  .epoch_i(epoch),
 													  .evid_reset_i(evid_reset),
 													  .next_id_o(next_id),
-													  .trig_out_o(TRIG_OUT));
+													  .trig_out_o(TRIG_OUT),
+													  .status_o(buf_status));
 													  
   // Fan out.
   assign SURF_REF_PULSE = {`NUM_SURFS{TRIG_IN}};

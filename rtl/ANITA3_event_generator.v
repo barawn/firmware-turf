@@ -29,6 +29,7 @@ module ANITA3_event_generator(
 		output [7:0] event_addr_o,
 		output [15:0] event_dat_o,
 		output event_wr_o,
+		output event_done_o,
 		
 		output [11:0] CMD_o 
     );
@@ -251,5 +252,5 @@ module ANITA3_event_generator(
 	assign event_wr_o = event_wr;
 	assign next_id_o = next_event_id;
 	assign event_error_o = (state == ERROR);
-	
+	assign event_done_o = (state == ISSUE_EVENT_READY);
 endmodule

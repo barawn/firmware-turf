@@ -40,7 +40,8 @@ module TRIGGER_INTERFACE( clk33_i,
 			  evid_reset_i,
 			  next_id_o,
 			  
-			  trig_out_o
+			  trig_out_o,
+			  status_o
 			  );
    parameter NUM_TRIG = 4;
    parameter NUM_HOLD = 4;
@@ -78,7 +79,7 @@ module TRIGGER_INTERFACE( clk33_i,
    output [31:0] 		   next_id_o;
 
    output 			   trig_out_o;
-
+	output [31:0] 		status_o;
 	wire rf_trigger;
 
 	wire digitize;
@@ -122,7 +123,7 @@ module TRIGGER_INTERFACE( clk33_i,
 														.trig_i(trigger),
 														.trig_buffer_o(trig_buffer),
 														.clear_i(clr_evt_i),
-														.clear_buffer_i(clear_buffer),
+														.clear_buffer_i(clr_buffer_250),
 														.digitize_o(digitize),
 														.digitize_buffer_o(digitize_buffer),
 														.digitize_source_o(digitize_source),
@@ -163,6 +164,7 @@ module TRIGGER_INTERFACE( clk33_i,
 	wire [7:0] event_write_addr;
 	wire [15:0] event_write_dat;
 	wire event_write;
+	wire event_done;
 	ANITA3_event_generator u_event_generator(.clk33_i(clk33_i),
 														  .clk125_i(clk125_i),
 														  .rst_i(clr_all_i),
@@ -182,6 +184,7 @@ module TRIGGER_INTERFACE( clk33_i,
 														  .event_addr_o(event_write_addr),
 														  .event_dat_o(event_write_dat),
 														  .event_wr_o(event_write),
+														  .event_done_o(event_done),
 														  // Error
 														  .event_error_o(event_error),
 														  .CMD_o(CMD_o));
@@ -190,12 +193,14 @@ module TRIGGER_INTERFACE( clk33_i,
 													 .event_wr_addr_i(event_write_addr),
 													 .event_wr_dat_i(event_write_dat),
 													 .event_wr_i(event_write),
+													 .event_done_i(event_done),
 													 .clear_evt_i(clr_evt_i),
 													 .clear_evt_250_o(clr_buffer_250),
 													 .read_buffer_o(clear_buffer),
 													 .rst_i(clr_all_i),
 													 .event_rd_addr_i(event_addr_i),
-													 .event_rd_dat_o(event_dat_o));
+													 .event_rd_dat_o(event_dat_o),
+													 .status_o(status_o));
 	// add more later
 	ANITA3_scalers u_scalers(.clk33_i(clk33_i),
 									 .L3_i(phi_scaler),

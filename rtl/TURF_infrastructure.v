@@ -72,10 +72,12 @@ module TURF_infrastructure(
 	DCM #(.CLK_FEEDBACK("1X"),.CLKOUT_PHASE_SHIFT("NONE"),.DESKEW_ADJUST("SOURCE_SYNCHRONOUS"),
 			.DLL_FREQUENCY_MODE("LOW"),.STARTUP_WAIT("TRUE")) u_deskew(.CLKIN(CLK33_to_DCM),
 															 .CLKFB(CLK33),
-															 .CLK0(CLK33_to_BUFG));															 
+															 .CLK0(CLK33_to_BUFG),
+															 .RST(1'b0));															 
 	DCM #(.CLK_FEEDBACK("2X"),.CLKOUT_PHASE_SHIFT("NONE"),
 			.DLL_FREQUENCY_MODE("LOW"),.STARTUP_WAIT("TRUE")) u_multip(.CLKIN(CLK125),
 															 .CLKFB(CLK250),
+															 .RST(1'b0),
 															 .CLK2X(CLK250_to_BUFG),
 															 .CLK2X180(CLK250B_to_BUFG));															 
 
