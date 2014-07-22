@@ -31,9 +31,9 @@ module ANITA3_event_buffers(
 	reg [1:0] next_read_buffer;		
 	reg [3:0] buffer_active = {4{1'b0}};
 	always @(current_read_buffer) begin
-		next_read_buffer <= current_read_buffer + 1;
+		//next_read_buffer <= current_read_buffer + 1;
 		// 2 buffers.
-		//next_read_buffer <= {1'b0,~current_read_buffer};
+		next_read_buffer <= {1'b0,~current_read_buffer};
 	end
 
 	always @(posedge clk33_i) begin

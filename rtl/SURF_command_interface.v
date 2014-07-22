@@ -17,7 +17,8 @@ module SURF_command_interface(
 		start_i,
 		busy_o,
 		done_o,
-		CMD_o
+		CMD_o,
+		CMD_debug_o
     );
 
 	parameter NUM_SURFS = 12;
@@ -28,12 +29,16 @@ module SURF_command_interface(
 	input start_i;
 	output done_o;
 	output [NUM_SURFS-1:0] CMD_o;
+	output CMD_debug_o;
 	output busy_o;
 	
 	(* IOB = "TRUE" *)
 	(* EQUIVALENT_REGISTER_REMOVAL = "FALSE" *)
 	(* KEEP = "YES" *)
 	reg [NUM_SURFS-1:0] cmd_reg = {12{1'b0}};
+	(* EQUIVALENT_REGISTER_REMOVAL = "FALSE" *)
+	(* KEEP = "YES" *)
+	reg cmd_debug = 0;
 	
 	reg [33:0] shift_reg = {34{1'b0}};
 	reg [5:0] counter = {6{1'b0}};
@@ -47,7 +52,7 @@ module SURF_command_interface(
 	// When Counter == 34, assert done, the stop bit is sent.
 	always @(posedge clk_i) begin
 		cmd_reg <= cmd_reg_in;
-
+		cmd_debug <= cmd_reg_in;
 		if (counter == 6'd34) done <= 1;
 
 		if (start_i) sending <= 1;
@@ -61,5 +66,6 @@ module SURF_command_interface(
 	end
 	assign done_o = done;
 	assign CMD_o = cmd_reg;
+	assign CMD_debug_o = cmd_debug;
 	assign busy_o = sending;
 endmodule

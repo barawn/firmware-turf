@@ -127,13 +127,14 @@ module ANITA3_event_generator(
 		endcase
 	end
 
-	SURF_command_interface u_command(.clk_i(clk33_i),
-												.start_i(state == START_EVENT),
-												.event_id_i(next_event_id),
-												.buffer_i(event_data_out[1:0]),
-												.busy_o(surf_command_busy),
-												.done_o(surf_command_done),
-												.CMD_o(CMD_o));
+	SURF_command_interface_dual u_command(.clk_i(clk33_i),
+														.start_i(state == START_EVENT),
+														.event_id_i(next_event_id),
+														.buffer_status_i(event_data_out[9:6]),
+														.buffer_i(event_data_out[1:0]),
+														.busy_o(surf_command_busy),
+														.done_o(surf_command_done),
+														.CMD_o(CMD_o));
 	
 	always @(posedge clk33_i) begin 
 		if (rst_i) event_wr <= 0;

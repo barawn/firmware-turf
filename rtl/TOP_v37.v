@@ -50,8 +50,8 @@ module TOP_v37(
 	parameter [3:0] VER_MONTH = 7;
 	parameter [7:0] VER_DAY = 22;
 	parameter [3:0] VER_MAJOR = 3;
-	parameter [3:0] VER_MINOR = 7;
-	parameter [3:0] VER_REV = 1;
+	parameter [3:0] VER_MINOR = 8;
+	parameter [3:0] VER_REV = 0;
 	parameter [3:0] VER_BOARDREV = 0;
 	parameter [31:0] VERSION = {VER_BOARDREV,VER_MONTH,VER_DAY,VER_MAJOR,VER_MINOR,VER_REV};
 
@@ -108,6 +108,7 @@ module TOP_v37(
 	// Buffer status.
 	wire [31:0] buf_status;
 	wire [34:0] register_debug;
+	wire [34:0] trigger_debug;
 	wire [31:0] pps_trig_time;
 	
 	wire soft_or_ext = (TRIG_IN && !dis_ext_trig) || soft_trig;
@@ -174,7 +175,8 @@ module TOP_v37(
 													  .evid_reset_i(evid_reset),
 													  .next_id_o(next_id),
 													  .trig_out_o(TRIG_OUT),
-													  .status_o(buf_status));
+													  .status_o(buf_status),
+													  .debug_o(trigger_debug));
 													  
   // Fan out.
   assign SURF_REF_PULSE = {`NUM_SURFS{TRIG_IN}};
@@ -185,7 +187,7 @@ module TOP_v37(
 		  (* box_type = "black_box" *)
 		  chipscope_icon u_icon(.CONTROL0(ila_control));
 		  (* box_type = "black_box" *)
-		  turf_ila u_ila(.CONTROL(ila_control),.CLK(CLK33),.TRIG0(register_debug));
+		  turf_ila u_ila(.CONTROL(ila_control),.CLK(CLK33),.TRIG0({trigger_debug[0],HOLD[3:0],register_debug[13:0]}));
 		end
 	endgenerate
 	

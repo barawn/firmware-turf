@@ -41,7 +41,8 @@ module TRIGGER_INTERFACE( clk33_i,
 			  next_id_o,
 			  
 			  trig_out_o,
-			  status_o
+			  status_o,
+			  debug_o
 			  );
    parameter NUM_TRIG = 4;
    parameter NUM_HOLD = 4;
@@ -80,6 +81,8 @@ module TRIGGER_INTERFACE( clk33_i,
 
    output 			   trig_out_o;
 	output [31:0] 		status_o;
+
+	output [34:0] debug_o;
 	wire rf_trigger;
 
 	wire digitize;
@@ -119,17 +122,17 @@ module TRIGGER_INTERFACE( clk33_i,
 											  .trig_o(rf_trigger),
 											  .phi_o(phi_pattern));
 	wire [NUM_HOLD-1:0] global_hold;
-   ANITA3_buffer_manager u_buffer_manager(.clk250_i(clk250_i),
-														.trig_i(trigger),
-														.trig_buffer_o(trig_buffer),
-														.clear_i(clr_evt_i),
-														.clear_buffer_i(clr_buffer_250),
-														.digitize_o(digitize),
-														.digitize_buffer_o(digitize_buffer),
-														.digitize_source_o(digitize_source),
-														.buffer_status_o(buffer_status),
-														.HOLD_o(global_hold),
-														.dead_o(trigger_dead));
+   new_buffer_handler_simple u_buffer_manager(.clk250_i(clk250_i),
+															.trig_i(trigger),
+															.trig_buffer_o(trig_buffer),
+															.clear_i(clr_buffer_250),
+															.clear_buffer_i(clear_buffer),
+															.digitize_o(digitize),
+															.digitize_buffer_o(digitize_buffer),
+															.digitize_source_o(digitize_source),
+															.buffer_status_o(buffer_status),
+															.HOLD_o(global_hold),
+															.dead_o(trigger_dead));
 	assign HOLD_o = {NUM_SURFS{global_hold}};
 	ANITA3_timebase u_timebase(.clk250_i(clk250_i),
 										.clk33_i(clk33_i),
@@ -165,7 +168,7 @@ module TRIGGER_INTERFACE( clk33_i,
 	wire [15:0] event_write_dat;
 	wire event_write;
 	wire event_done;
-	ANITA3_event_generator u_event_generator(.clk33_i(clk33_i),
+	ANITA3_dual_event_generator u_event_generator(.clk33_i(clk33_i),
 														  .clk125_i(clk125_i),
 														  .rst_i(clr_all_i),
 														  // Command to begin event generation, and all details.
@@ -187,7 +190,8 @@ module TRIGGER_INTERFACE( clk33_i,
 														  .event_done_o(event_done),
 														  // Error
 														  .event_error_o(event_error),
-														  .CMD_o(CMD_o));
+														  .CMD_o(CMD_o),
+														  .CMD_debug_o(debug_o[0]));
 	ANITA3_event_buffers u_event_buffers(.clk33_i(clk33_i),
 													 .clk250_i(clk250_i),
 													 .event_wr_addr_i(event_write_addr),

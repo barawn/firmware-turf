@@ -31,7 +31,8 @@ module ANITA3_dual_event_generator(
 		output event_wr_o,
 		output event_done_o,
 		
-		output [11:0] CMD_o 
+		output [11:0] CMD_o,
+		output CMD_debug_o
     );
 
 	// Use an 18-bit block RAM.
@@ -169,7 +170,8 @@ module ANITA3_dual_event_generator(
 												.buffer_i(buffer_decoder),
 												.busy_o(surf_command_busy),
 												.done_o(surf_command_done),
-												.CMD_o(CMD_o));
+												.CMD_o(CMD_o),
+												.CMD_debug_o(CMD_debug_o));
 	
 	always @(posedge clk33_i) begin 
 		if (rst_i) event_wr <= 0;
