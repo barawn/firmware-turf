@@ -18,7 +18,7 @@ module SURF_command_interface(
 		busy_o,
 		done_o,
 		CMD_o,
-		CMD_debug_o
+		CMD_debug_o	
     );
 
 	parameter NUM_SURFS = 12;
@@ -32,9 +32,7 @@ module SURF_command_interface(
 	output CMD_debug_o;
 	output busy_o;
 	
-	(* IOB = "TRUE" *)
 	(* EQUIVALENT_REGISTER_REMOVAL = "FALSE" *)
-	(* KEEP = "YES" *)
 	reg [NUM_SURFS-1:0] cmd_reg = {12{1'b0}};
 	(* EQUIVALENT_REGISTER_REMOVAL = "FALSE" *)
 	(* KEEP = "YES" *)
@@ -44,17 +42,19 @@ module SURF_command_interface(
 	reg [5:0] counter = {6{1'b0}};
 	reg sending = 0;
 	reg done = 0;
-	wire cmd_reg_in = (start_i || done_o) ? start_i : shift_reg[0];
+	wire cmd_reg_in = (!sending || done_o) ? start_i : shift_reg[0];
 	// We need to send 36 total bits. 
 	// Start bit sent at counter == 0.
 	// Buffer ID sent at counter == 1, 2.
 	// Event ID sent at 3,4,5,6, 7,8,9,10, 11,12,13,14, 15,16,17,18, 19,20,21,22 23,24,25,26 27,28,29,30 31,32,33,34.
 	// When Counter == 34, assert done, the stop bit is sent.
 	always @(posedge clk_i) begin
-		cmd_reg <= cmd_reg_in;
+		cmd_reg <= {NUM_SURFS{cmd_reg_in}};
 		cmd_debug <= cmd_reg_in;
-		if (counter == 6'd34) done <= 1;
 
+		if (counter == 6'd34) done <= 1;
+		else done <= 0;
+		
 		if (start_i) sending <= 1;
 		else if (done) sending <= 0;		
 		

@@ -17,7 +17,9 @@ module TURF_infrastructure(
 		SURF_CLK_P, SURF_CLK_N,
 		SURF_REF_PULSE_P, SURF_REF_PULSE_N, SURF_REF_PULSE,
 		CLK125_P, CLK125_N, CLK125, CLK250, CLK250B,
-		CLK33_P, CLK33_N, CLK33		
+		CLK33_P, CLK33_N, CLK33,
+		dcm_reset_i,
+		dcm_status_o
     );
 
 	parameter NUM_SURFS = 12;
@@ -45,6 +47,8 @@ module TURF_infrastructure(
 	output CLK33;
 	output CLK250;
 	output CLK250B;
+	input dcm_reset_i;
+	output [2:0] dcm_status_o;
 	
 	wire [NUM_SURFS-1:0] SURF_CLK_to_OBUFDS;
 	wire CLK125_to_BUFG;
@@ -68,6 +72,10 @@ module TURF_infrastructure(
 	IBUFGDS u_ibufg_clk33(.I(CLK33_P),.IB(CLK33_N),.O(CLK33_to_DCM));
 	BUFG u_bufg_clk33(.I(CLK33_to_BUFG),.O(CLK33));
 	
+	wire [7:0] dcm_status;
+	wire dcm_locked;
+	assign dcm_status_o[1:0] = dcm_status[1:0];
+	assign dcm_status_o[2] = dcm_locked;
 
 	DCM #(.CLK_FEEDBACK("1X"),.CLKOUT_PHASE_SHIFT("NONE"),.DESKEW_ADJUST("SOURCE_SYNCHRONOUS"),
 			.DLL_FREQUENCY_MODE("LOW"),.STARTUP_WAIT("TRUE")) u_deskew(.CLKIN(CLK33_to_DCM),
@@ -77,7 +85,9 @@ module TURF_infrastructure(
 	DCM #(.CLK_FEEDBACK("2X"),.CLKOUT_PHASE_SHIFT("NONE"),
 			.DLL_FREQUENCY_MODE("LOW"),.STARTUP_WAIT("TRUE")) u_multip(.CLKIN(CLK125),
 															 .CLKFB(CLK250),
-															 .RST(1'b0),
+															 .RST(dcm_reset),
+															 .LOCKED(dcm_locked),
+															 .STATUS(dcm_status),
 															 .CLK2X(CLK250_to_BUFG),
 															 .CLK2X180(CLK250B_to_BUFG));															 
 
@@ -90,7 +100,9 @@ module TURF_infrastructure(
 			for (k=0;k<NUM_HOLD;k=k+1) begin : HOLD
 				OBUFDS u_hold(.I(HOLD[NUM_HOLD*i+k]),.O(HOLD_P[NUM_HOLD*i+k]),.OB(HOLD_N[4*i+k]));
 			end
-			OBUFDS u_cmd(.I(CMD[i]),.O(CMD_P[i]),.OB(CMD_N[i]));
+			assign CMD_P[i] = CMD[i];
+			assign CMD_N[i] = ~CMD[i];
+//			OBUFDS u_cmd(.I(CMD[i]),.O(CMD_P[i]),.OB(CMD_N[i]));
 			OBUFDS u_ref_pulse(.I(SURF_REF_PULSE[i]),.O(SURF_REF_PULSE_P[i]),.OB(SURF_REF_PULSE_N[i]));
 			FDDRRSE u_refclk_ddr(.C0(CLK125),.C1(CLK125B),.D0(1'b1),.D1(1'b0),.R(1'b0),.S(1'b0),.Q(SURF_CLK_to_OBUFDS[i]));
 			OBUFDS u_refclk_obufds(.I(SURF_CLK_to_OBUFDS[i]),.O(SURF_CLK_P[i]),.OB(SURF_CLK_N[i]));

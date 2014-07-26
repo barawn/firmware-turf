@@ -48,10 +48,10 @@ module TOP_v37(
 
 	parameter DEBUG = "YES";
 	parameter [3:0] VER_MONTH = 7;
-	parameter [7:0] VER_DAY = 22;
+	parameter [7:0] VER_DAY = 26;
 	parameter [3:0] VER_MAJOR = 3;
 	parameter [3:0] VER_MINOR = 8;
-	parameter [3:0] VER_REV = 0;
+	parameter [3:0] VER_REV = 1;
 	parameter [3:0] VER_BOARDREV = 0;
 	parameter [31:0] VERSION = {VER_BOARDREV,VER_MONTH,VER_DAY,VER_MAJOR,VER_MINOR,VER_REV};
 
@@ -64,7 +64,12 @@ module TOP_v37(
 	wire CLK250B;
 	wire CLK125;
 	wire CLK33;
+	wire dcm_reset;
+	wire [2:0] dcm_status;
+	
 	TURF_infrastructure #(.NUM_SURFS(`NUM_SURFS)) u_turf_if(.L1_P(L1_P),.L1_N(L1_N),.L1(L1),
+																	.dcm_reset_i(dcm_reset),
+																	.dcm_status_o(dcm_status),
 																	.HOLD_P(HOLD_P),.HOLD_N(HOLD_N),.HOLD(HOLD),
 																	.CMD_P(CMD_P),.CMD_N(CMD_N),.CMD(CMD),
 																	.SURF_CLK_P(SURF_CLK_P),.SURF_CLK_N(SURF_CLK_N),
@@ -90,6 +95,7 @@ module TOP_v37(
 	wire [5:0] event_addr;
 	// Phi masking
 	wire [31:0] phi_mask;
+	wire [31:0] ant_mask;
 	// Event ID epoch and overall reset.
 	wire [11:0] epoch;
 	wire evid_reset;
@@ -120,11 +126,14 @@ module TOP_v37(
 															  .scal_addr_o(scal_addr),
 															  .event_dat_i(event_dat),
 															  .event_addr_o(event_addr),
+															  .ant_mask_o(ant_mask),
 															  .phi_mask_o(phi_mask),
 															  .epoch_o(epoch),
 															  .evid_reset_o(evid_reset),
 															  .clr_all_o(clr_all),
 															  .clr_evt_o(clr_evt),
+															  .dcm_reset_o(dcm_reset),
+															  .dcm_status_i(dcm_status),
 															  .disable_o(disable_evt),
 															  .en_pps1_trig_o(en_pps1_trig),
 															  .en_pps2_trig_o(en_pps2_trig),
@@ -159,7 +168,9 @@ module TOP_v37(
 													  
 													  .pps_i(pps_clk250),
 													  .pps_clk33_i(pps_clk33),
+													  .refpulse_i(TRIG_IN),
 													  
+													  .ant_mask_i(ant_mask),
 													  .phi_mask_i(phi_mask),
 													  // FIX THIS.
 													  // This should be soft OR ext trig.
@@ -187,7 +198,7 @@ module TOP_v37(
 		  (* box_type = "black_box" *)
 		  chipscope_icon u_icon(.CONTROL0(ila_control));
 		  (* box_type = "black_box" *)
-		  turf_ila u_ila(.CONTROL(ila_control),.CLK(CLK33),.TRIG0({trigger_debug[0],HOLD[3:0],register_debug[13:0]}));
+		  turf_ila u_ila(.CONTROL(ila_control),.CLK(CLK33),.TRIG0({clr_all,trigger_debug[15:0],HOLD[3:0],register_debug[13:0]}));
 		end
 	endgenerate
 	

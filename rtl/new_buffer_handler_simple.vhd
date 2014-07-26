@@ -30,6 +30,7 @@ use IEEE.STD_LOGIC_UNSIGNED.ALL;
 entity new_buffer_handler_simple is
 port(
 clk250_i : in std_logic; -- was 125
+rst_i : in std_logic;
 trig_i : in std_logic_vector(3 downto 0); -- was DO_HOLD
 trig_buffer_o : out std_logic_vector(1 downto 0); -- unconnected on top - leave for consistency 
 clear_i : in std_logic; -- used to generate RELEASE
@@ -126,16 +127,22 @@ HOLD_o <=HOLD_D & HOLD_C & HOLD_B & HOLD_A;
 -- latching process
 process(clk250_i)
 begin
-	DO_HOLD <= trig_i(0) or trig_i(1) or trig_i(2) or trig_i(3);
-	dead_o <= (HOLD_D or HOLD_C) and (HOLD_B or HOLD_A); -- if even only one of the chip is held, we need to wait to start issuing triggers.
-	if clear_i = '1' then
-		case clear_buffer_i(0) is 
-		when '0' => RELEASE(0)<= '1';
-		when '1' => RELEASE(1)<= '1';
-		when others => RELEASE <= "00";
-		end case;
-	else
+	if rst_i = '1' then
+		DO_HOLD<= '0';
+		dead_o <= '0';
 		RELEASE <= "00";
+	elsif rising_edge(clk250_i) then
+		DO_HOLD <= trig_i(0) or trig_i(1) or trig_i(2) or trig_i(3);
+		dead_o <= (HOLD_D or HOLD_C) and (HOLD_B or HOLD_A); -- if even only one of the chip is held, we need to wait to start issuing triggers.
+		if clear_i = '1' then
+			case clear_buffer_i(0) is 
+			when '0' => RELEASE(0)<= '1';
+			when '1' => RELEASE(1)<= '1';
+			when others => RELEASE <= "00";
+			end case;
+		else
+			RELEASE <= "00";
+		end if;
 	end if;
 end process;
 
@@ -145,11 +152,19 @@ end process;
 
 process(clk250_i)
 begin
-	if rising_edge(clk250_i) then
+	if rst_i = '1' then
 		START_HOLDING <= "00";
 		DO_HOLD_VEC <= "00"; -- also the DO_HOLD_VECTOR need to be single clock pulses
 		REJECTED<='0'; -- REJECTED indicates no available buffer for triggering.
-		FIRST_I <= not FIRST_I;
+		FIRST_I <= '0';
+		digitize_source_o<= (others => '0');
+		veto_hold_counter<=(others => '0');
+		FROZEN <=(others => '0');
+	elsif rising_edge(clk250_i) then
+		START_HOLDING <= "00";
+		DO_HOLD_VEC <= "00"; -- also the DO_HOLD_VECTOR need to be single clock pulses
+		REJECTED<='0'; -- REJECTED indicates no available buffer for triggering.
+--		FIRST_I <= not FIRST_I;
 		if FROZEN /= "11" and veto_hold_counter >0 then veto_hold_counter<= veto_hold_counter - 1; end if; -- new data is recorded on one ASIC
 																																			-- as long as not both are frozen			
 --		if veto_hold_counter0 >0 then veto_hold_counter0<= veto_hold_counter0 - 1; end if;
@@ -159,12 +174,14 @@ begin
 				if FROZEN(0) = '0' and veto_hold_counter = "00000" then 
 					FROZEN(0)<='1';
 					DO_HOLD_VEC(0)<='1';
+					FIRST_I <= not FIRST_I; -- change first only if it effectively triggered
 					digitize_source_o<=trig_i;
 					START_HOLDING <= "01";
 					veto_hold_counter<= "11001"; --when frozen, the last ~100ns of data are already recorded - need to wait until a new hold is issued
 				elsif  FROZEN(1) = '0' and veto_hold_counter = "00000" then 
 					FROZEN(1)<='1';
 					DO_HOLD_VEC(1)<='1';
+					FIRST_I <= not FIRST_I; -- change first only if it effectively triggered
 					digitize_source_o<=trig_i;
 					START_HOLDING <= "10";
 					veto_hold_counter<= "11001";
@@ -175,12 +192,14 @@ begin
 				if FROZEN(1) = '0' and veto_hold_counter = "00000" then 
 					FROZEN(1)<='1';
 					DO_HOLD_VEC(1)<='1';
+					FIRST_I <= not FIRST_I; -- change first only if it effectively triggered
 					digitize_source_o<=trig_i;
 					START_HOLDING <= "10";
 					veto_hold_counter<= "11001";
 				elsif  FROZEN(0) = '0' and veto_hold_counter = "00000" then 
 					FROZEN(0)<='1';
 					DO_HOLD_VEC(0)<='1';
+					FIRST_I <= not FIRST_I; -- change first only if it effectively triggered
 					digitize_source_o<=trig_i;
 					START_HOLDING <= "01";
 					veto_hold_counter<= "11001";
@@ -198,7 +217,16 @@ end process;
 
 process(clk250_i)
 begin
-	if rising_edge(clk250_i) then
+	if rst_i = '1' then
+		BUSY_I<= '0';
+		state0<=SAMPLING;
+		HOLD_A<='0';
+		HOLD_B<='0';
+		FIRST_A<= '1'; -- it effectively means A is the first to be held
+		st_counterI_0 <= (others => '0');
+		st_counterII_0 <= (others => '0');
+		start_digitize_0 <= '0';
+	elsif rising_edge(clk250_i) then
 	start_digitize_0 <= '0';
 	case state0 is
 		when SAMPLING => 
@@ -211,7 +239,7 @@ begin
 					end if;
 					HOLD_A<='0';
 					HOLD_B<='0';
-					FIRST_A <= not FIRST_A;
+--					FIRST_A <= not FIRST_A; -- for now always uses A as the first lab to be held
 		when HOLD_1 =>
 					BUSY_I<= '1';
 					HOLD_A<=FIRST_A;
@@ -256,7 +284,16 @@ end process;
 
 process(clk250_i)
 begin
-	if rising_edge(clk250_i) then
+		if rst_i = '1' then
+			BUSY_II<= '0';
+			state1<=SAMPLING;
+			HOLD_C<='0';
+			HOLD_D<='0';
+			FIRST_C<= '1';
+			st_counterI_1 <= (others => '0');
+			st_counterII_1 <= (others => '0');
+			start_digitize_1 <= '0';
+		elsif rising_edge(clk250_i) then
 		start_digitize_1 <= '0';
 	case state1 is
 		when SAMPLING => 
@@ -269,7 +306,7 @@ begin
 					end if;
 					HOLD_C<='0';
 					HOLD_D<='0';
-					FIRST_C <= not FIRST_C;
+--					FIRST_C <= not FIRST_C; -- for now always uses C as the first lab to be held
 		when HOLD_1 =>
 					BUSY_II<= '1';
 					HOLD_C<=FIRST_C;
@@ -312,7 +349,12 @@ end process;
 
 process(clk250_i)
 begin
-	if rising_edge(clk250_i) then
+	if rst_i = '1' then
+		digitize_counter<=(others =>'0');
+		digitize_o <= '0';
+		digitize_buffer_o <= "00";
+		buffer_status_o<= (others =>'0');		
+	elsif rising_edge(clk250_i) then
 		if digitize_counter > 0 then
 			digitize_o <= '1';
 			digitize_counter <= digitize_counter - 1;

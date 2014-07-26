@@ -16,11 +16,13 @@ module TURF_REGISTER_INTERFACE_v2(input clk_i,
 				  input [31:0] 	event_dat_i,
 				  output [5:0] 	event_addr_o,
 				  // Dedicated register outputs.
+				  output [31:0] ant_mask_o,
 				  output [31:0] phi_mask_o,
 				  output [11:0] epoch_o,
 				  output 	evid_reset_o,
 				  output 	clr_all_o,
 				  output 	clr_evt_o,
+				  output 	dcm_reset_o,
 				  output 	disable_o,
 				  output 	en_pps1_trig_o,
 				  output 	en_pps2_trig_o,
@@ -29,6 +31,7 @@ module TURF_REGISTER_INTERFACE_v2(input clk_i,
 				  // Dedicated register inputs.
 				  input [31:0] 	next_id_i,
 				  input [31:0] 	buf_status_i, 
+				  input [2:0] 		dcm_status_i,
 				  /// Clock register.
 				  output [31:0] pps_time_o,
 				  // TURFIO interface
@@ -72,6 +75,7 @@ module TURF_REGISTER_INTERFACE_v2(input clk_i,
    // Phi mask register.
    wire 					sel_phi_mask_register;   
    reg [31:0] 					phi_mask_register = {32{1'b0}};
+   reg [31:0] 					ant_mask_register = {32{1'b0}};
    // Event ID epoch register.
    wire 					sel_epoch_register;   
    reg [11:0] 					epoch_register = {12{1'b0}};
@@ -84,7 +88,7 @@ module TURF_REGISTER_INTERFACE_v2(input clk_i,
    reg [31:0] 					clock_register = {32{1'b0}};   
    // Clear and disable register.
    wire 					sel_clear_register;   
-   reg [2:0] 					clear_register = {3{1'b0}};
+   reg [3:0] 					clear_register = {4{1'b0}};
    
    // Bank 0 = registers
    // Bank 1/2 = Event data.
@@ -101,7 +105,7 @@ module TURF_REGISTER_INTERFACE_v2(input clk_i,
    // Holding register for outgoing data.
    reg [23:0] 					data_register_out = {24{1'b0}};
 
-   localparam FSM_BITS = 3;
+   localparam FSM_BITS = 4;
    localparam [FSM_BITS-1:0] IDLE = 0;   // Wait for nCSTURF_Q
    localparam [FSM_BITS-1:0] WR0 = 1;    // Byte0 from TURFIO on bus
    localparam [FSM_BITS-1:0] WR1 = 2;    // Byte1 from TURFIO on bus
@@ -110,6 +114,7 @@ module TURF_REGISTER_INTERFACE_v2(input clk_i,
    localparam [FSM_BITS-1:0] RD1 = 5;    // Byte1 to TURFIO on bus
    localparam [FSM_BITS-1:0] RD2 = 6;    // Byte2 to TURFIO on bus
    localparam [FSM_BITS-1:0] RD3 = 7;    // Byte3 to TURFIO on bus
+	localparam [FSM_BITS-1:0] RD4 = 8; 	  // Complete.
    reg [FSM_BITS-1:0] 				state = IDLE;
 
    // Logic associated with the state machine.
@@ -122,7 +127,8 @@ module TURF_REGISTER_INTERFACE_v2(input clk_i,
 	end
 	RD1: state <= RD2;
 	RD2: state <= RD3;
-	RD3: state <= IDLE;
+	RD3: state <= RD4;
+	RD4: state <= IDLE;
 	WR0: state <= WR1;
 	WR1: state <= WR2;
 	WR2: state <= WR3;
@@ -170,7 +176,7 @@ module TURF_REGISTER_INTERFACE_v2(input clk_i,
       terminate_read <= (state == RD3);
       
       wr_reg <= (state == WR3);
-
+      if (wr_reg && (address_register[2:0] == 3'd4)) ant_mask_register <= data_register_in;
       if (wr_reg && (address_register[2:0] == 3'd6)) phi_mask_register <= data_register_in;
       if (wr_reg && (address_register[2:0] == 3'd7)) begin
 	 epoch_register <= data_register_in[11:0];
@@ -187,7 +193,7 @@ module TURF_REGISTER_INTERFACE_v2(input clk_i,
 		end else begin
 			trigger_register[0] <= 0;
 		end
-      if (wr_reg && (address_register[3:0] == 4'd12)) clear_register <= data_register_in[2:0];
+      if (wr_reg && (address_register[3:0] == 4'd12)) clear_register <= data_register_in[3:0];
       else clear_register[1:0] <= {2{1'b0}};
 
       if (wr_reg && (address_register[3:0] == 4'd9)) clock_register <= data_register_in;
@@ -206,7 +212,7 @@ module TURF_REGISTER_INTERFACE_v2(input clk_i,
    assign turf_registers[9] = {{5{1'b0}}, clock_register};
    assign turf_registers[10] = buf_status_i;
    assign turf_registers[11] = next_id_i;
-   assign turf_registers[12] = {{29{1'b0}},clear_register};
+   assign turf_registers[12] = {{25{1'b0}},dcm_status_i,clear_register};
    assign turf_registers[13] = turf_registers[5];
    assign turf_registers[14] = turf_registers[6];
 	assign turf_registers[15] = turf_registers[7];
@@ -224,14 +230,16 @@ module TURF_REGISTER_INTERFACE_v2(input clk_i,
    
    assign scal_addr_o = turf_di_q[5:0];
    assign event_addr_o = turf_di_q[5:0];
-
+	
+   assign ant_mask_o = ant_mask_register;
    assign phi_mask_o = phi_mask_register;
    assign epoch_o = epoch_register;
    assign evid_reset_o = evid_reset;
    assign clr_all_o = clear_register[0];
    assign clr_evt_o = clear_register[1];
    assign disable_o = clear_register[2];
-
+	assign dcm_reset_o = clear_register[3];
+	
    assign soft_trig_o = trigger_register[0];   
    assign en_pps1_trig_o = trigger_register[1];
    assign en_pps2_trig_o = trigger_register[2];

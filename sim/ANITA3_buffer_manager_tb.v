@@ -14,13 +14,13 @@ module ANITA3_buffer_manager_tb;
 
 	// Inputs
 	reg clk250_i;
-	reg trig_i;
+	reg [3:0] trig_i;
 	reg clear_i;
 	reg [1:0] clear_buffer_i;
 
 	// Outputs
 	wire [1:0] trig_buffer_o;
-	wire [3:0] digitize_o;
+	wire digitize_o;
 	wire [3:0] HOLD_o;
 	wire dead_o;
 

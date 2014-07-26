@@ -25,7 +25,9 @@ module TRIGGER_INTERFACE( clk33_i,
 
 			  pps_i,			  
 			  pps_clk33_i,
+			  refpulse_i,
 			  
+			  ant_mask_i,
 			  phi_mask_i,
 			  
 			  soft_trig_i,
@@ -65,7 +67,9 @@ module TRIGGER_INTERFACE( clk33_i,
    
    input 			   pps_i;
 	input 				pps_clk33_i;
+	input 			   refpulse_i;
 
+	input [NUM_PHI*2-1:0] ant_mask_i;
 	input [NUM_PHI*2-1:0] phi_mask_i;
 
    input 			   soft_trig_i;
@@ -91,9 +95,13 @@ module TRIGGER_INTERFACE( clk33_i,
    wire [1:0] 			   trig_buffer;
    wire [1:0] 			   clear_buffer;
    wire trigger_dead;
+	
+	wire [15:0] deadtime;
+	
 	wire [NUM_PHI*2-1:0] phi_pattern;
 	wire [2*NUM_PHI-1:0] phi_scaler;	
-
+	wire [2*NUM_PHI-1:0] phi_mon_scaler;
+	
 	wire [3:0] buffer_status;
 
 	wire [15:0] current_pps_time;
@@ -113,16 +121,27 @@ module TRIGGER_INTERFACE( clk33_i,
 	assign trigger[2] = pps2_trig_i;
 	assign trigger[3] = soft_trig_i;
 
+	ANITA3_deadtime_counter u_deadtime(.clk250_i(clk250_i),
+												  .clk33_i(clk33_i),
+												  .dead_i(trigger_dead),
+												  .pps_i(pps_i),
+												  .pps_clk33_i(pps_clk33_i),
+												  .deadtime_o(deadtime));
+
    ANITA3_simple_trigger u_trigger(.clk33_i(clk33_i),
 											  .clk250_i(clk250_i),
 											  .clk250b_i(clk250b_i),
+											  .ant_mask_i(ant_mask_i),
 											  .phi_mask_i(phi_mask_i),
 											  .scal_o(phi_scaler),
+											  .refpulse_i(refpulse_i),
+											  .mon_scal_o(phi_mon_scaler),
 											  .L1_i(L1_i),
 											  .trig_o(rf_trigger),
 											  .phi_o(phi_pattern));
 	wire [NUM_HOLD-1:0] global_hold;
    new_buffer_handler_simple u_buffer_manager(.clk250_i(clk250_i),
+															.rst_i(clr_all_i),
 															.trig_i(trigger),
 															.trig_buffer_o(trig_buffer),
 															.clear_i(clr_buffer_250),
@@ -191,7 +210,7 @@ module TRIGGER_INTERFACE( clk33_i,
 														  // Error
 														  .event_error_o(event_error),
 														  .CMD_o(CMD_o),
-														  .CMD_debug_o(debug_o[0]));
+														  .debug_o(debug_o));
 	ANITA3_event_buffers u_event_buffers(.clk33_i(clk33_i),
 													 .clk250_i(clk250_i),
 													 .event_wr_addr_i(event_write_addr),
@@ -207,9 +226,12 @@ module TRIGGER_INTERFACE( clk33_i,
 													 .status_o(status_o));
 	// add more later
 	ANITA3_scalers u_scalers(.clk33_i(clk33_i),
+									 .refpulse_i(refpulse_i),
 									 .L3_i(phi_scaler),
+									 .L3_mon_i(phi_mon_scaler),
 									 .pps_i(pps_clk33_i),
 									 .sec_i(current_pps_time),
+									 .deadtime_i(deadtime),
 									 .c3po_i(current_clock_time),
 									 .scal_addr_i(scal_addr_i),
 									 .scal_dat_o(scal_dat_o));

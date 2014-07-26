@@ -18,6 +18,9 @@ module ANITA3_simple_trigger( clk250_i,
 										L1_i,
 										trig_o,
 										scal_o,
+										refpulse_i,
+										mon_scal_o,
+										ant_mask_i,
 										phi_mask_i,
 										phi_o
 										);
@@ -30,17 +33,20 @@ module ANITA3_simple_trigger( clk250_i,
 	input clk250b_i;
 	input clk33_i;
    input [NUM_SURFS*NUM_TRIG-1:0] L1_i;
+	input [2*NUM_PHI-1:0] ant_mask_i;
 	input [2*NUM_PHI-1:0] phi_mask_i;
    output 			  trig_o;
 	output [2*NUM_PHI-1:0] phi_o;
 	output [2*NUM_PHI-1:0] scal_o;
+	input refpulse_i;
+	output [2*NUM_PHI-1:0] mon_scal_o;
 	
 	wire [NUM_PHI-1:0] V_pol_phi;
 	wire [NUM_PHI-1:0] H_pol_phi;
 
 	ANITA3_simple_trigger_map u_map(.clk250_i(clk250_i),
 											  .clk250b_i(clk250b_i),
-											  .mask_i(phi_mask_i),
+											  .mask_i(ant_mask_i),
 											  .L1_i(L1_i),
 											  .V_pol_phi_o(V_pol_phi),
 											  .H_pol_phi_o(H_pol_phi));
@@ -59,13 +65,15 @@ module ANITA3_simple_trigger( clk250_i,
 	generate
 		genvar i;
 		for (i=0;i<NUM_PHI;i=i+1) begin : RF_TRIG
-			srl_oneshot v_scaler(.clk250_i(clk250_i),.trig_i(V_pol_trig[i]),.scal_o(scal_o[i]));
-			srl_oneshot h_scaler(.clk250_i(clk250_i),.trig_i(H_pol_trig[i]),.scal_o(scal_o[NUM_PHI+i]));
+			srl_oneshot_with_ref v_scaler(.clk250_i(clk250_i),.trig_i(V_pol_trig[i]),.pulse_i(refpulse_i), 
+													.scal_o(scal_o[i]), .mon_scal_o(mon_scal_o[i]));
+			srl_oneshot_with_ref h_scaler(.clk250_i(clk250_i),.trig_i(H_pol_trig[i]),.pulse_i(refpulse_i), 
+													.scal_o(scal_o[NUM_PHI+i]), .mon_scal_o(mon_scal_o[NUM_PHI+i]));
 			always @(posedge clk250_i) begin
 				// The i+NUM_PHI-1 makes sure that we're always taking the modulus of a positive number.
 				// It works out to (i-1), wrapping around from 0-15.
-				V_pol_trig[i] <= (V_pol_phi[i]) && (V_pol_phi[(i+NUM_PHI-1)%NUM_PHI] || V_pol_phi[(i+1)%NUM_PHI]);
-				H_pol_trig[i] <= (H_pol_phi[i]) && (H_pol_phi[(i+NUM_PHI-1)%NUM_PHI] || H_pol_phi[(i+1)%NUM_PHI]);
+				V_pol_trig[i] <= ((V_pol_phi[i]) && (V_pol_phi[(i+NUM_PHI-1)%NUM_PHI] || V_pol_phi[(i+1)%NUM_PHI])) && !phi_mask_i[i];
+				H_pol_trig[i] <= ((H_pol_phi[i]) && (H_pol_phi[(i+NUM_PHI-1)%NUM_PHI] || H_pol_phi[(i+1)%NUM_PHI])) && !phi_mask_i[NUM_PHI+i];
 			end
 		end
 	endgenerate

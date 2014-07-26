@@ -33,7 +33,7 @@ module ANITA3_event_buffers(
 	always @(current_read_buffer) begin
 		//next_read_buffer <= current_read_buffer + 1;
 		// 2 buffers.
-		next_read_buffer <= {1'b0,~current_read_buffer};
+		next_read_buffer <= {1'b0,~current_read_buffer[0]};
 	end
 
 	always @(posedge clk33_i) begin
@@ -45,7 +45,7 @@ module ANITA3_event_buffers(
 			buffer_active[event_wr_addr_i[7:6]] <= 1;
 		end
 		if (rst_i) current_read_buffer <= {2{1'b0}};
-		else if (clear_evt_i) current_read_buffer <= current_read_buffer + 1;
+		else if (clear_evt_i) current_read_buffer <= next_read_buffer;
 		current_read_buffer_hold <= current_read_buffer;
 	end
 	flag_sync u_sync(.in_clkA(clear_evt_i),.clkA(clk33_i),

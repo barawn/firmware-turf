@@ -32,7 +32,7 @@ module ANITA3_dual_event_generator(
 		output event_done_o,
 		
 		output [11:0] CMD_o,
-		output CMD_debug_o
+		output [34:0] debug_o
     );
 
 	// Use an 18-bit block RAM.
@@ -95,8 +95,12 @@ module ANITA3_dual_event_generator(
 		else if (start_flag) write_counter <= write_counter + 1;
 		else write_counter <= {3{1'b0}};
 	end
-
-	assign block_ram_in[0] = {1'b1,{6{1'b0}},buffer_status_i,digitize_source_i,digitize_buffer_i};
+	// 2 bits for digitize buffer
+	// 4 bits for source
+	// 4 bits for status
+	// 6 bits unused
+	// 2 bits stop/start.
+	assign block_ram_in[0] = {2'b10,{6{1'b0}},buffer_status_i,digitize_source_i,digitize_buffer_i};
 	assign block_ram_in[1] = {2'b00,pattern_i[15:0]};
 	assign block_ram_in[2] = {2'b00,pattern_i[31:16]};
 	assign block_ram_in[3] = {2'b00,pps_time_i};
@@ -112,38 +116,40 @@ module ANITA3_dual_event_generator(
 	
 	always @(posedge clk33_i) begin : READ_FSM
 		if (rst_i) state <= IDLE;
-		case (state)
-			IDLE: if (event_read_valid) begin
-					if (!event_data_out[17]) state <= ERROR;
-					else state <= START_EVENT;
-			end
-			// The check here should never happen EXCEPT if a clr_all comes in,
-			// resets us, and a new event comes in while the old one was still being
-			// commanded out. This covers that case, and ensures that the SURFs
-			// *always* see a full command.
-			START_EVENT: if (!surf_command_busy) state <= ISSUE_ID_AND_DIGITIZE_0;
-			ISSUE_ID_AND_DIGITIZE_0: if (surf_command_done) state <= WAIT_1;
-			WAIT_1: state <= WAIT_2;
-			WAIT_2: state <= ISSUE_ID_AND_DIGITIZE_1;
-			ISSUE_ID_AND_DIGITIZE_1: if (surf_command_done) state <= STORE_ID_HIGH;
-			STORE_ID_HIGH: state <= STORE_STATUS;
-			STORE_STATUS: state <= STORE_COUNT;
-			STORE_COUNT: state <= STORE_LOW_PATTERN;
-			STORE_LOW_PATTERN: state <= STORE_HIGH_PATTERN;
-			STORE_HIGH_PATTERN: state <= STORE_TIME;
-			STORE_TIME: state <= STORE_CLOCK_LOW;
-			STORE_CLOCK_LOW: state <= STORE_CLOCK_HIGH;
-			STORE_CLOCK_HIGH: state <= ISSUE_EVENT_READY;
-			ISSUE_EVENT_READY: state <= IDLE;
-			ERROR: state <= ERROR;
-		endcase
+		else begin
+			case (state)
+				IDLE: if (event_read_valid) begin
+						if (!event_data_out[17]) state <= ERROR;
+						else state <= START_EVENT;
+				end
+				// The check here should never happen EXCEPT if a clr_all comes in,
+				// resets us, and a new event comes in while the old one was still being
+				// commanded out. This covers that case, and ensures that the SURFs
+				// *always* see a full command.
+				START_EVENT: if (!surf_command_busy) state <= ISSUE_ID_AND_DIGITIZE_0;
+				ISSUE_ID_AND_DIGITIZE_0: if (surf_command_done) state <= WAIT_1;
+				WAIT_1: state <= WAIT_2;
+				WAIT_2: state <= ISSUE_ID_AND_DIGITIZE_1;
+				ISSUE_ID_AND_DIGITIZE_1: if (surf_command_done) state <= STORE_ID_HIGH;
+				STORE_ID_HIGH: state <= STORE_STATUS;
+				STORE_STATUS: state <= STORE_COUNT;
+				STORE_COUNT: state <= STORE_LOW_PATTERN;
+				STORE_LOW_PATTERN: state <= STORE_HIGH_PATTERN;
+				STORE_HIGH_PATTERN: state <= STORE_TIME;
+				STORE_TIME: state <= STORE_CLOCK_LOW;
+				STORE_CLOCK_LOW: state <= STORE_CLOCK_HIGH;
+				STORE_CLOCK_HIGH: state <= ISSUE_EVENT_READY;
+				ISSUE_EVENT_READY: state <= IDLE;
+				ERROR: state <= ERROR;
+			endcase
+		end
 	end
 
 	always @(buffer_out or buffer_status_out) begin
 		case (buffer_out[0])
 			1'b0: begin
 				// A and B
-				if (((state == START_EVENT) || ISSUE_ID_AND_DIGITIZE_0)) begin
+				if (((state == START_EVENT) || (state == ISSUE_ID_AND_DIGITIZE_0))) begin
 					if (buffer_status_out[0]) buffer_decoder <= 2'b01;
 					else buffer_decoder <= 2'b00;
 				end else begin
@@ -153,7 +159,7 @@ module ANITA3_dual_event_generator(
 			end
 			1'b1: begin
 				// C and D
-				if (((state == START_EVENT) || ISSUE_ID_AND_DIGITIZE_0)) begin
+				if (((state == START_EVENT) || (state == ISSUE_ID_AND_DIGITIZE_0))) begin
 					if (buffer_status_out[0]) buffer_decoder <= 2'b11;
 					else buffer_decoder <= 2'b10;
 				end else begin
@@ -164,6 +170,8 @@ module ANITA3_dual_event_generator(
 		endcase
 	end
 
+	wire cmd_debug;
+
 	SURF_command_interface u_command(.clk_i(clk33_i),
 												.start_i((state == START_EVENT) || (state == WAIT_2)),
 												.event_id_i(next_event_id),
@@ -171,7 +179,7 @@ module ANITA3_dual_event_generator(
 												.busy_o(surf_command_busy),
 												.done_o(surf_command_done),
 												.CMD_o(CMD_o),
-												.CMD_debug_o(CMD_debug_o));
+												.CMD_debug_o(cmd_debug));
 	
 	always @(posedge clk33_i) begin 
 		if (rst_i) event_wr <= 0;
@@ -291,4 +299,9 @@ module ANITA3_dual_event_generator(
 	assign next_id_o = next_event_id;
 	assign event_error_o = (state == ERROR);
 	assign event_done_o = (state == ISSUE_EVENT_READY);
+	assign debug_o[0] = cmd_debug;
+	assign debug_o[1 +: 4] = state;
+	assign debug_o[5] = surf_command_busy;
+	assign debug_o[6] = surf_command_done;
+	assign debug_o[34:7] = {34-7+1{1'b0}};
 endmodule
