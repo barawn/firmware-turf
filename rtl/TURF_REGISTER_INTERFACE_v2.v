@@ -182,9 +182,9 @@ module TURF_REGISTER_INTERFACE_v2(input clk_i,
       terminate_read <= (state == RD3);
       
       wr_reg <= (state == WR3);
-      if (wr_reg && (address_register[2:0] == 3'd4)) ant_mask_register <= data_register_in;
-      if (wr_reg && (address_register[2:0] == 3'd6)) phi_mask_register <= data_register_in;
-      if (wr_reg && (address_register[2:0] == 3'd7)) begin
+      if (wr_reg && (address_register[3:0] == 4'd4)) ant_mask_register <= data_register_in;
+      if (wr_reg && (address_register[3:0] == 4'd6)) phi_mask_register <= data_register_in;
+      if (wr_reg && (address_register[3:0] == 4'd7)) begin
 	 epoch_register <= data_register_in[11:0];
 	 evid_reset <= 1;
       end else begin
