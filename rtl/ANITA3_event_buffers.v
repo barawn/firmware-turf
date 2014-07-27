@@ -26,6 +26,10 @@ module ANITA3_event_buffers(
 		output [31:0] status_o
     );
 
+	reg clear_dual_event_pending = 0;
+
+	reg clear_dual_event = 0;
+
 	reg [1:0] current_read_buffer = {2{1'b0}};
 	reg [1:0] current_read_buffer_hold = {2{1'b0}};
 	reg [1:0] next_read_buffer;		
@@ -37,16 +41,24 @@ module ANITA3_event_buffers(
 	end
 
 	always @(posedge clk33_i) begin
+		if (rst_i) clear_dual_event_pending <= 0;
+		else if (clear_evt_i && clear_dual_event_pending) clear_dual_event_pending <= 0;
+		else if (clear_evt_i) clear_dual_event_pending <= 1;
+
+		clear_dual_event <= clear_evt_i && clear_dual_event_pending;
+
 		if (rst_i) begin
 			buffer_active <= {4{1'b0}};
-		end else if (clear_evt_i) begin
+		end else if (clear_dual_event) begin
 			buffer_active[current_read_buffer] <= 0;
 		end else if (event_done_i) begin
 			buffer_active[event_wr_addr_i[7:6]] <= 1;
 		end
+		
 		if (rst_i) current_read_buffer <= {2{1'b0}};
-		else if (clear_evt_i) current_read_buffer <= next_read_buffer;
+		else if (clear_dual_event) current_read_buffer <= next_read_buffer;
 		current_read_buffer_hold <= current_read_buffer;
+
 	end
 	flag_sync u_sync(.in_clkA(clear_evt_i),.clkA(clk33_i),
 						  .out_clkB(clear_evt_250_o),.clkB(clk250_i));

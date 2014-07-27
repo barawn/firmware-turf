@@ -215,7 +215,7 @@ module TRIGGER_INTERFACE( clk33_i,
 														  .event_error_o(event_error),
 														  .CMD_o(CMD_o),
 														  .debug_o(debug_o));
-	ANITA3_event_buffers u_event_buffers(.clk33_i(clk33_i),
+	ANITA3_dual_event_buffers u_event_buffers(.clk33_i(clk33_i),
 													 .clk250_i(clk250_i),
 													 .event_wr_addr_i(event_write_addr),
 													 .event_wr_dat_i(event_write_dat),

@@ -54,6 +54,11 @@ module ANITA3_simple_trigger( clk250_i,
 											  .H_pol_phi_o(H_pol_phi));
 	reg [NUM_PHI-1:0] V_pol_trig = {NUM_PHI{1'b0}};
 	reg [NUM_PHI-1:0] H_pol_trig = {NUM_PHI{1'b0}};
+	
+	reg [NUM_PHI-1:0] V_pol_phi_del = {NUM_PHI{1'b0}};
+	reg [NUM_PHI-1:0] H_pol_phi_del = {NUM_PHI{1'b0}};
+
+	
 	reg [NUM_PHI-1:0] V_pol_hold = {NUM_PHI{1'b0}};
 	reg [NUM_PHI-1:0] H_pol_hold = {NUM_PHI{1'b0}};
 	reg [NUM_PHI-1:0] V_pol_pat = {NUM_PHI{1'b0}};
@@ -88,10 +93,12 @@ module ANITA3_simple_trigger( clk250_i,
 	endgenerate
 	
 	always @(posedge clk250_i) begin
-		H_pol_hold <= H_pol_trig;
-		V_pol_hold <= V_pol_trig;
-		if (!H_rf_trigger && !trigger_holdoff) H_pol_pat <= H_pol_hold;
-		if (!V_rf_trigger && !trigger_holdoff) V_pol_pat <= V_pol_hold;		
+		V_pol_phi_del <= V_pol_phi;
+		H_pol_phi_del <= H_pol_phi;
+		H_pol_hold <= H_pol_phi_del;
+		V_pol_hold <= V_pol_phi_del;
+		if ((H_rf_trigger || V_rf_trigger) && !trigger_holdoff) H_pol_pat <= H_pol_hold;
+		if ((H_rf_trigger || V_rf_trigger) && !trigger_holdoff) V_pol_pat <= V_pol_hold;		
 		H_rf_trigger <= |H_pol_trig;
 		V_rf_trigger <= |V_pol_trig;
 		rf_trigger <= (H_rf_trigger | V_rf_trigger) && !trigger_holdoff;
