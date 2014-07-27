@@ -97,7 +97,7 @@ module TURF_infrastructure(
 			for (j=0;j<NUM_TRIG;j=j+1) begin : TRIG
 				IBUFDS u_trig(.I(L1_P[NUM_TRIG*i+j]),.IB(L1_N[NUM_TRIG*i+j]),.O(L1[4*i+j]));
 			end
-			for (k=0;k<NUM_HOLD;k=k+1) begin : HOLD
+			for (k=0;k<NUM_HOLD;k=k+1) begin : HOLD_1
 				OBUFDS u_hold(.I(HOLD[NUM_HOLD*i+k]),.O(HOLD_P[NUM_HOLD*i+k]),.OB(HOLD_N[4*i+k]));
 			end
 			assign CMD_P[i] = CMD[i];
