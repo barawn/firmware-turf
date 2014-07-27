@@ -28,6 +28,7 @@ module ANITA3_scalers(
 	input clk33_i;
 	input [2*NUM_PHI-1:0] L3_i;
 	input [2*NUM_PHI-1:0] L3_mon_i;
+	input refpulse_i;
 	input pps_i;
 	input [15:0] sec_i;
 	input [31:0] c3po_i;
@@ -50,7 +51,13 @@ module ANITA3_scalers(
 	wire [2*NUM_PHI-1:0] l3_mon_flag = l3_mon_reg & ~l3_mon_reg2;
 	
 	reg [31:0] output_data;
-		
+	wire [7:0] refpulse_count;
+	reg [1:0] refpulse_reg = {2{1'b0}};
+	wire [7:0] refpulse_scaler;
+	ANITA3_scaler u_scaler_refpulse(.clk_i(clk33_i),
+											  .pps_i(pps_i),
+											  .count_i(refpulse_reg[0] && !refpulse_reg[1]),
+											  .scaler_o(refpulse_scaler));
 	// 64 overall scalers, but they map to 16 total addresses.
 	wire [7:0] l3_scalers_hold[4*NUM_PHI-1:0];
 	wire [31:0] l3_scalers_unmuxed[15:0];
@@ -87,18 +94,21 @@ module ANITA3_scalers(
 	endgenerate
 	
 	always @(posedge clk33_i) begin
+		refpulse_reg <= {refpulse_reg[0],refpulse_i};
 		l3_mon_reg <= L3_mon_i;
 		l3_mon_reg2 <= l3_mon_reg;
 		l3_reg <= L3_i;
 		l3_reg2 <= l3_reg;
 	end
 	// Scalers map to 0x10-0x1F.	
-	// 101001 = 0x29
-	// 100111 = 0x27	
+	// 100000 = 0x20
+	// 101001 = 0x29 = PPS
+	// 100111 = 0x27 = C3P0 250
 	always @(scal_addr_i or l3_scalers_mux or c3po_i) begin
 		if (!scal_addr_i[5]) output_data <= l3_scalers_mux;
 		else begin
-			if (scal_addr_i[2]) output_data <= {sec_i,deadtime_i};
+			if (!scal_addr_i[0]) output_data <= refpulse_scaler;
+			else if (!scal_addr_i[2]) output_data <= {sec_i,deadtime_i};
 			else output_data <= c3po_i;
 		end
 	end

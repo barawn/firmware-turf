@@ -22,7 +22,8 @@ module ANITA3_simple_trigger( clk250_i,
 										mon_scal_o,
 										ant_mask_i,
 										phi_mask_i,
-										phi_o
+										phi_o,
+										count_o
 										);
    parameter NUM_SURFS = 12;
    parameter NUM_TRIG = 4;
@@ -40,6 +41,7 @@ module ANITA3_simple_trigger( clk250_i,
 	output [2*NUM_PHI-1:0] scal_o;
 	input refpulse_i;
 	output [2*NUM_PHI-1:0] mon_scal_o;
+	output [7:0] count_o;
 	
 	wire [NUM_PHI-1:0] V_pol_phi;
 	wire [NUM_PHI-1:0] H_pol_phi;
@@ -60,7 +62,14 @@ module ANITA3_simple_trigger( clk250_i,
 	reg H_rf_trigger = 0;
 	reg V_rf_trigger = 0;
 	reg rf_trigger = 0;
+	reg [1:0] raw_rf_trigger = {2{1'b0}};
 	wire trigger_holdoff;
+
+	reg [7:0] raw_rf_count = {8{1'b0}};
+	
+	reg rf_count_flag = 0;
+	
+	reg [7:0] rf_count = {8{1'b0}};	
 	
 	generate
 		genvar i;
@@ -86,6 +95,12 @@ module ANITA3_simple_trigger( clk250_i,
 		H_rf_trigger <= |H_pol_trig;
 		V_rf_trigger <= |V_pol_trig;
 		rf_trigger <= (H_rf_trigger | V_rf_trigger) && !trigger_holdoff;
+		raw_rf_trigger <= {raw_rf_trigger[0],(H_rf_trigger | V_rf_trigger)};
+	
+		rf_count_flag <= (raw_rf_trigger[0] && !raw_rf_trigger[1]);
+		
+		if (rf_count_flag) raw_rf_count <= raw_rf_count + 1;
+		if (rf_count_flag && !trigger_holdoff) rf_count <= raw_rf_count;
 	end
 	
 	ANITA3_trigger_holdoff u_rf_holdoff(.clk250_i(clk250_i),
@@ -94,6 +109,7 @@ module ANITA3_simple_trigger( clk250_i,
 	
 	assign trig_o = rf_trigger;
 	assign phi_o = {H_pol_pat,V_pol_pat};
+	assign count_o = rf_count;
 endmodule
    
    

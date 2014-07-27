@@ -120,6 +120,8 @@ module TRIGGER_INTERFACE( clk33_i,
 	assign trigger[1] = pps1_trig;
 	assign trigger[2] = pps2_trig_i;
 	assign trigger[3] = soft_trig_i;
+	
+	wire [7:0] rf_count;
 
 	ANITA3_deadtime_counter u_deadtime(.clk250_i(clk250_i),
 												  .clk33_i(clk33_i),
@@ -138,7 +140,8 @@ module TRIGGER_INTERFACE( clk33_i,
 											  .mon_scal_o(phi_mon_scaler),
 											  .L1_i(L1_i),
 											  .trig_o(rf_trigger),
-											  .phi_o(phi_pattern));
+											  .phi_o(phi_pattern),
+											  .count_o(rf_count));
 	wire [NUM_HOLD-1:0] global_hold;
    new_buffer_handler_simple u_buffer_manager(.clk250_i(clk250_i),
 															.rst_i(clr_all_i),
@@ -198,6 +201,7 @@ module TRIGGER_INTERFACE( clk33_i,
 														  .pattern_i(phi_pattern),
 														  .pps_time_i(event_pps_time),
 														  .clock_time_i(event_clock_time),
+														  .rf_count_i(rf_count),
 														  // Event ID control.
 														  .epoch_i(epoch_i),
 														  .evid_reset_i(evid_reset_i),

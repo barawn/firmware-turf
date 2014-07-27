@@ -50,52 +50,66 @@ module ANITA3_simple_trigger_map(
 	
 	reg [NUM_PHI-1:0] V_pol_phi_pipe = {NUM_PHI{1'b0}};
 	reg [NUM_PHI-1:0] H_pol_phi_pipe = {NUM_PHI{1'b0}};
-	
-	// This is totally made up, since no current mapping exists.
-	// Our first attempt, using SURFs 0->7, sucks. Let's try
-	// using SURFs 2-9: if my guess is right, these should wrap
-	// around the top half of the chip, and the delay to get from
-	// one side to the next shouldn't be that bad.
-	generate
-		genvar i,j;
-		for (i=0;i<8;i=i+1) begin : L1		
-			assign V_pol_phi_in[0] = SURF_L1[2][0];
-			assign V_pol_phi_in[4] = SURF_L1[2][1];
-			assign V_pol_phi_in[2] = SURF_L1[3][0];
-			assign V_pol_phi_in[6] = SURF_L1[3][1];
-			assign V_pol_phi_in[1] = SURF_L1[4][0];
-			assign V_pol_phi_in[5] = SURF_L1[4][1];
-			assign V_pol_phi_in[3] = SURF_L1[5][0];
-			assign V_pol_phi_in[7] = SURF_L1[5][1];
-			assign V_pol_phi_in[15] = SURF_L1[6][0];
-			assign V_pol_phi_in[11] = SURF_L1[6][1];
-			assign V_pol_phi_in[13] = SURF_L1[7][0];
-			assign V_pol_phi_in[9] = SURF_L1[7][1];
-			assign V_pol_phi_in[14] = SURF_L1[8][0];
-			assign V_pol_phi_in[10] = SURF_L1[8][1];
-			assign V_pol_phi_in[12] = SURF_L1[9][0];
-			assign V_pol_phi_in[8] = SURF_L1[9][1];
 
-			assign H_pol_phi_in[0] = SURF_L1[2][2];
-			assign H_pol_phi_in[4] = SURF_L1[2][3];
-			assign H_pol_phi_in[2] = SURF_L1[3][2];
-			assign H_pol_phi_in[6] = SURF_L1[3][3];
-			assign H_pol_phi_in[1] = SURF_L1[4][2];
-			assign H_pol_phi_in[5] = SURF_L1[4][3];
-			assign H_pol_phi_in[3] = SURF_L1[5][2];
-			assign H_pol_phi_in[7] = SURF_L1[5][3];
-			assign H_pol_phi_in[15] = SURF_L1[6][2];
-			assign H_pol_phi_in[11] = SURF_L1[6][3];
-			assign H_pol_phi_in[13] = SURF_L1[7][2];
-			assign H_pol_phi_in[9] = SURF_L1[7][3];
-			assign H_pol_phi_in[14] = SURF_L1[8][2];
-			assign H_pol_phi_in[10] = SURF_L1[8][3];
-			assign H_pol_phi_in[12] = SURF_L1[9][2];
-			assign H_pol_phi_in[8] = SURF_L1[9][3];
-			
-//			assign V_pol_phi_in[2*i +: 2] = L1_i[NUM_TRIG*(i+2) +: 2];
-//			assign H_pol_phi_in[2*i +: 2] = L1_i[NUM_TRIG*(i+2)+2 +: 2];
-		end
+	assign V_pol_phi_in[0] = SURF_L1[2][0];
+	assign V_pol_phi_in[4] = SURF_L1[2][1];
+	assign H_pol_phi_in[0] = SURF_L1[2][2];
+	assign H_pol_phi_in[4] = SURF_L1[2][3];
+
+	// TEMPORARY MOVE!!!!
+	// SURF 3 should have phi sectors 2 and 6.
+	// SURF 3 should have phi sectors 1 and 5.
+	
+	// We're temporarily switching phi sectors 2 and 5.
+// CORRECT
+//	assign V_pol_phi_in[2] = SURF_L1[3][0];
+//	assign V_pol_phi_in[6] = SURF_L1[3][1];
+//	assign H_pol_phi_in[2] = SURF_L1[3][2];
+//	assign H_pol_phi_in[6] = SURF_L1[3][3];
+//
+//	assign V_pol_phi_in[1] = SURF_L1[4][0];
+//	assign V_pol_phi_in[5] = SURF_L1[4][1];
+//	assign H_pol_phi_in[1] = SURF_L1[4][2];
+//	assign H_pol_phi_in[5] = SURF_L1[4][3];
+
+// WRONG
+	assign V_pol_phi_in[5] = SURF_L1[3][0];
+	assign V_pol_phi_in[6] = SURF_L1[3][1];
+	assign H_pol_phi_in[5] = SURF_L1[3][2];
+	assign H_pol_phi_in[6] = SURF_L1[3][3];
+
+	assign V_pol_phi_in[1] = SURF_L1[4][0];
+	assign V_pol_phi_in[2] = SURF_L1[4][1];
+	assign H_pol_phi_in[1] = SURF_L1[4][2];
+	assign H_pol_phi_in[2] = SURF_L1[4][3];
+
+	assign V_pol_phi_in[3] = SURF_L1[5][0];
+	assign V_pol_phi_in[7] = SURF_L1[5][1];
+	assign H_pol_phi_in[3] = SURF_L1[5][2];
+	assign H_pol_phi_in[7] = SURF_L1[5][3];
+
+	assign V_pol_phi_in[15] = SURF_L1[6][0];
+	assign V_pol_phi_in[11] = SURF_L1[6][1];
+	assign H_pol_phi_in[15] = SURF_L1[6][2];
+	assign H_pol_phi_in[11] = SURF_L1[6][3];
+
+	assign V_pol_phi_in[13] = SURF_L1[7][0];
+	assign V_pol_phi_in[9] = SURF_L1[7][1];
+	assign H_pol_phi_in[13] = SURF_L1[7][2];
+	assign H_pol_phi_in[9] = SURF_L1[7][3];
+
+	assign V_pol_phi_in[14] = SURF_L1[8][0];
+	assign V_pol_phi_in[10] = SURF_L1[8][1];
+	assign H_pol_phi_in[14] = SURF_L1[8][2];
+	assign H_pol_phi_in[10] = SURF_L1[8][3];
+
+	assign V_pol_phi_in[12] = SURF_L1[9][0];
+	assign V_pol_phi_in[8] = SURF_L1[9][1];
+	assign H_pol_phi_in[12] = SURF_L1[9][2];
+	assign H_pol_phi_in[8] = SURF_L1[9][3];
+
+	generate
+		genvar j;
 		for (j=0;j<NUM_PHI;j=j+1) begin : PHI
 			always @(posedge clk250_i) begin : IFF
 				if (V_pol_mask[j]) V_pol_phi_reg[j] <= 0;

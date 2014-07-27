@@ -22,6 +22,7 @@ module ANITA3_dual_event_generator(
 		input [15:0] pps_time_i,
 		input [31:0] clock_time_i,
 		input [11:0] epoch_i,
+		input [7:0] rf_count_i,
 		input evid_reset_i,
 		output [31:0] next_id_o,
 		output event_error_o,
@@ -64,7 +65,7 @@ module ANITA3_dual_event_generator(
 	wire surf_command_done;
 	wire surf_command_busy;
 	
-	localparam FSM_BITS = 4;
+	localparam FSM_BITS = 5;
 	localparam [FSM_BITS-1:0] IDLE = 0;
 	localparam [FSM_BITS-1:0] START_EVENT = 1;
 	localparam [FSM_BITS-1:0] ISSUE_ID_AND_DIGITIZE_0 = 2;
@@ -76,6 +77,7 @@ module ANITA3_dual_event_generator(
 	localparam [FSM_BITS-1:0] STORE_TIME = 8;
 	localparam [FSM_BITS-1:0] STORE_CLOCK_LOW = 9;
 	localparam [FSM_BITS-1:0] STORE_CLOCK_HIGH = 10;
+	localparam [FSM_BITS-1:0] STORE_RF_COUNT = 16;
 	localparam [FSM_BITS-1:0] ISSUE_EVENT_READY = 11;
 	localparam [FSM_BITS-1:0] ERROR = 12;
 	localparam [FSM_BITS-1:0] WAIT_1 = 13;
@@ -89,7 +91,7 @@ module ANITA3_dual_event_generator(
 	
 		if (rst_i) start_flag <= 0;
 		else if (digitize_reg[0] && !digitize_reg[1]) start_flag <= 1;
-		else if (write_counter[2] && write_counter[0]) start_flag <= 0;
+		else if (write_counter[2] && write_counter[1]) start_flag <= 0;
 
 		if (rst_i) write_counter <= {3{1'b0}};
 		else if (start_flag) write_counter <= write_counter + 1;
@@ -105,8 +107,8 @@ module ANITA3_dual_event_generator(
 	assign block_ram_in[2] = {2'b00,pattern_i[31:16]};
 	assign block_ram_in[3] = {2'b00,pps_time_i};
 	assign block_ram_in[4] = {2'b00,clock_time_i[15:0]};
-	assign block_ram_in[5] = {2'b01,clock_time_i[31:16]};
-	assign block_ram_in[6] = block_ram_in[2];
+	assign block_ram_in[5] = {2'b00,clock_time_i[31:16]};
+	assign block_ram_in[6] = {2'b00,rf_count_i,digitize_source_i,digitize_buffer_i};
 	assign block_ram_in[7] = block_ram_in[3];
 	assign block_ram_mux = block_ram_in[write_counter];
 
@@ -138,7 +140,8 @@ module ANITA3_dual_event_generator(
 				STORE_HIGH_PATTERN: state <= STORE_TIME;
 				STORE_TIME: state <= STORE_CLOCK_LOW;
 				STORE_CLOCK_LOW: state <= STORE_CLOCK_HIGH;
-				STORE_CLOCK_HIGH: state <= ISSUE_EVENT_READY;
+				STORE_CLOCK_HIGH: state <= STORE_RF_COUNT;
+				STORE_RF_COUNT: state <= ISSUE_EVENT_READY;
 				ISSUE_EVENT_READY: state <= IDLE;
 				ERROR: state <= ERROR;
 			endcase
@@ -280,9 +283,14 @@ module ANITA3_dual_event_generator(
 				event_data <= event_data_out;
 				event_read_enable <= 1;
 			end
-			ISSUE_EVENT_READY: begin
+			STORE_RF_COUNT: begin
 				event_addr_pointer <= 6'h14;
 				event_data <= buffer_pointer;
+				event_read_enable <= 1;
+			end
+			ISSUE_EVENT_READY: begin
+				event_addr_pointer <= 6'h00;
+				event_data <= {event_data_out[15:8],1'b0,buffer_sum,event_data_out[2],event_data_out[5:2]};
 				event_read_enable <= 0;
 			end
 			default: begin

@@ -41,17 +41,18 @@ module TOP_v37(
 		output [`NUM_SURFS-1:0] SURF_CLK_N,
 		// Reference pulse outputs to SURFs. (TS_S0_P/N in old firmware)
 		output [`NUM_SURFS-1:0] SURF_REF_PULSE_P,
-		output [`NUM_SURFS-1:0] SURF_REF_PULSE_N
+		output [`NUM_SURFS-1:0] SURF_REF_PULSE_N,
 		// Unused returns from SURFs (no diff-ins - BUSY_P/N in old firmware)
+		input [`NUM_SURFS-1:0] SURF_BUSY_A
 		// input [`NUM_SURFS*2-1:0] SURF_IN		
     );
 
 	parameter DEBUG = "YES";
 	parameter [3:0] VER_MONTH = 7;
-	parameter [7:0] VER_DAY = 26;
+	parameter [7:0] VER_DAY = 27;
 	parameter [3:0] VER_MAJOR = 3;
 	parameter [3:0] VER_MINOR = 8;
-	parameter [3:0] VER_REV = 1;
+	parameter [3:0] VER_REV = 5;
 	parameter [3:0] VER_BOARDREV = 0;
 	parameter [31:0] VERSION = {VER_BOARDREV,VER_MONTH,VER_DAY,VER_MAJOR,VER_MINOR,VER_REV};
 
@@ -116,11 +117,13 @@ module TOP_v37(
 	wire [34:0] register_debug;
 	wire [34:0] trigger_debug;
 	wire [31:0] pps_trig_time;
-	
-	wire soft_or_ext = (TRIG_IN && !dis_ext_trig) || soft_trig;
+
+	wire soft_or_ext;
+	soft_or_ext_pipe u_pipe(.soft_i(soft_trig),.ext_i(TRIG_IN),.disable_ext_i(dis_ext_trig),.trig_o(soft_or_ext),
+									.clk250_i(CLK250),.clk33_i(CLK33));
 	
 	wire event_ready;
-	
+		
 	TURF_REGISTER_INTERFACE_v2 #(.VERSION(VERSION)) u_turf_registers(.clk_i(CLK33),
 															  .scal_dat_i(scal_dat),
 															  .scal_addr_o(scal_addr),
@@ -139,6 +142,7 @@ module TOP_v37(
 															  .en_pps2_trig_o(en_pps2_trig),
 															  .dis_ext_trig_o(dis_ext_trig),
 															  .soft_trig_o(soft_trig),
+															  .busy_i(SURF_BUSY_A),
 															  .next_id_i(next_id),
 															  .buf_status_i(buf_status),
 															  .pps_time_o(pps_trig_time),
@@ -193,12 +197,17 @@ module TOP_v37(
   assign SURF_REF_PULSE = {`NUM_SURFS{TRIG_IN}};
 
   wire [35:0] ila_control;
+  wire [35:0] vio_control;
+  wire [11:0] vio_async_out;
+  assign vio_async_out = SURF_BUSY_A;
 	generate
 		if (DEBUG == "YES") begin : CS_CORES
 		  (* box_type = "black_box" *)
-		  chipscope_icon u_icon(.CONTROL0(ila_control));
+		  chipscope_icon u_icon(.CONTROL0(ila_control),.CONTROL1(vio_control));
 		  (* box_type = "black_box" *)
 		  turf_ila u_ila(.CONTROL(ila_control),.CLK(CLK33),.TRIG0({clr_all,trigger_debug[15:0],HOLD[3:0],register_debug[13:0]}));
+		  (* box_type = "black_box" *)
+		  turf_vio u_vio(.CONTROL(vio_control),.ASYNC_IN(vio_async_out));
 		end
 	endgenerate
 	

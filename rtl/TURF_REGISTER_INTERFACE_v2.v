@@ -29,8 +29,14 @@ module TURF_REGISTER_INTERFACE_v2(input clk_i,
 				  output 	dis_ext_trig_o,
 				  output 	soft_trig_o,
 				  // Dedicated register inputs.
+				  // busy_i is the "busy_a" flag from the SURFs. Use for
+				  // identification checking.
+				  input [11:0]		busy_i,
+				  // Next event ID.
 				  input [31:0] 	next_id_i,
+				  // Event buffer status.
 				  input [31:0] 	buf_status_i, 
+				  // DCM status.
 				  input [2:0] 		dcm_status_i,
 				  /// Clock register.
 				  output [31:0] pps_time_o,
@@ -204,7 +210,7 @@ module TURF_REGISTER_INTERFACE_v2(input clk_i,
    assign turf_registers[1] = version_register;
    assign turf_registers[2] = ident_register;
    assign turf_registers[3] = version_register;
-   assign turf_registers[4] = {32{1'b0}};
+   assign turf_registers[4] = ant_mask_register;
    assign turf_registers[5] = {32{1'b0}};
    assign turf_registers[6] = phi_mask_register;
    assign turf_registers[7] = {{20{1'b0}}, epoch_register};
@@ -212,7 +218,7 @@ module TURF_REGISTER_INTERFACE_v2(input clk_i,
    assign turf_registers[9] = {{5{1'b0}}, clock_register};
    assign turf_registers[10] = buf_status_i;
    assign turf_registers[11] = next_id_i;
-   assign turf_registers[12] = {{25{1'b0}},dcm_status_i,clear_register};
+   assign turf_registers[12] = {busy_i,{13{1'b0}},dcm_status_i,clear_register};
    assign turf_registers[13] = turf_registers[5];
    assign turf_registers[14] = turf_registers[6];
 	assign turf_registers[15] = turf_registers[7];
