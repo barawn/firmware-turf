@@ -74,5 +74,5 @@ module ANITA3_dual_event_buffers(
 											.DOB(event_rd_dat_o),.ADDRB({1'b0,current_read_buffer,1'b0,event_rd_addr_i}),.WEB(1'b0),.ENB(1'b1),.SSRB(1'b0),.CLKB(clk33_i));
 
 	assign read_buffer_o = {1'b0,current_read_buffer_hold};
-	assign status_o = {{15{1'b0}},buffer_active[current_read_buffer],{10{1'b0}},buffer_active,current_read_buffer};
+	assign status_o = {{15{1'b0}},buffer_active[current_read_buffer],{10{1'b0}},legacy_buffer_active,current_read_buffer,clear_dual_event_pending};
 endmodule
