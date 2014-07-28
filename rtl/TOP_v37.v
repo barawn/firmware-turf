@@ -52,7 +52,7 @@ module TOP_v37(
 	parameter [7:0] VER_DAY = 27;
 	parameter [3:0] VER_MAJOR = 3;
 	parameter [3:0] VER_MINOR = 8;
-	parameter [7:0] VER_REV = 7;
+	parameter [7:0] VER_REV = 8;
 	parameter [3:0] VER_BOARDREV = 0;
 	parameter [31:0] VERSION = {VER_BOARDREV,VER_MONTH,VER_DAY,VER_MAJOR,VER_MINOR,VER_REV};
 
@@ -153,6 +153,7 @@ module TOP_v37(
 
 	ANITA3_pps_trigger u_pps_trig(.clk33_i(CLK33),
 											.pps_i(PPS_BURST),
+											.disable_i(disable_evt),
 											.en_i(en_pps2_trig),
 											.trig_o(pps2_trig));
 
@@ -176,6 +177,8 @@ module TOP_v37(
 													  
 													  .ant_mask_i(ant_mask),
 													  .phi_mask_i(phi_mask),
+													  
+													  .disable_i(disable_evt),
 													  // FIX THIS.
 													  // This should be soft OR ext trig.
 													  .soft_trig_i(soft_or_ext),

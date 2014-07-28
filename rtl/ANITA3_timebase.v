@@ -17,6 +17,7 @@ module ANITA3_timebase(
 		input pps_i,
 		input [31:0] trig_time_i,
 		input trig_en_i,
+		input disable_i,
 		output trig_o,
 		
 		input event_i,
@@ -71,7 +72,8 @@ module ANITA3_timebase(
 	reg trig_match_3 = 0;
 	reg [3:0] trig_counter_1 = 0;
 	reg trig = 0;
-
+   reg trig_en = 0;
+	
 	always @(posedge clk33_i) begin
 		pps_sync <= {pps_sync[0],pps_stretch};
 		pps_flag <= (pps_sync[0] && !pps_sync[1]);	
@@ -82,13 +84,15 @@ module ANITA3_timebase(
 	end
 	
    always @(posedge clk250_i) begin
+		trig_en <= trig_en_i && !disable_i;
+		
 		if (counter_1_flag) trig_match_1 <= trig_match_counter_2 && !trig_time_i[31];
 		if (pps_i) trig_match_2 <= trig_time_i[31];
 		trig_counter_1 <= trig_time_i[3:0];
 
 		trig_match_3 <= (trig_counter_1 == counter_1);
 		
-		trig <= (trig_match_1 || trig_match_2) && trig_match_3 && trig_en_i;
+		trig <= (trig_match_1 || trig_match_2) && trig_match_3 && trig_en;
 
 		digitize_reg <= {digitize_reg[0],event_i};
 		digitize_flag <= (digitize_reg[0] && !digitize_reg[1]);

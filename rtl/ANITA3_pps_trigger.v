@@ -13,6 +13,7 @@
 module ANITA3_pps_trigger(
 		input clk33_i,
 		input pps_i,
+		input disable_i,
 		input en_i,
 		output trig_o
     );
@@ -26,7 +27,7 @@ module ANITA3_pps_trigger(
 		pps_reg_i <= {pps_reg_i[0], pps_i};
 		trigger <= pps_reg_i[0] && !pps_reg_i[1] && !holdoff && en_i;
 		if (holdoff_counter_plus_one[7]) holdoff <= 0;
-		else if (trigger) holdoff <= 1;
+		else if (trigger && !disable_i) holdoff <= 1;
 		if (holdoff) holdoff_counter <= holdoff_counter_plus_one;
 	end
 	

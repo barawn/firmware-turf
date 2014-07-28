@@ -30,6 +30,7 @@ module TRIGGER_INTERFACE( clk33_i,
 			  ant_mask_i,
 			  phi_mask_i,
 			  
+			  disable_i,
 			  soft_trig_i,
 			  pps1_en_i,
 			  pps1_time_i,
@@ -71,6 +72,8 @@ module TRIGGER_INTERFACE( clk33_i,
 
 	input [NUM_PHI*2-1:0] ant_mask_i;
 	input [NUM_PHI*2-1:0] phi_mask_i;
+
+	input disable_i;
 
    input 			   soft_trig_i;
    input 			   pps1_en_i;
@@ -135,6 +138,7 @@ module TRIGGER_INTERFACE( clk33_i,
 											  .clk250b_i(clk250b_i),
 											  .ant_mask_i(ant_mask_i),
 											  .phi_mask_i(phi_mask_i),
+											  .disable_i(disable_i),
 											  .scal_o(phi_scaler),
 											  .refpulse_i(refpulse_i),
 											  .mon_scal_o(phi_mon_scaler),
@@ -161,6 +165,7 @@ module TRIGGER_INTERFACE( clk33_i,
 										.rst_i(clr_all_i),
 										.pps_i(pps_i),
 										.trig_en_i(pps1_en_i),
+										.disable_i(disable_i),
 										.trig_time_i(pps1_time_i),
 										.trig_o(pps1_trig),
 										.event_i(digitize),
@@ -190,6 +195,7 @@ module TRIGGER_INTERFACE( clk33_i,
 	wire [15:0] event_write_dat;
 	wire event_write;
 	wire event_done;
+	wire [34:0] generator_debug;
 	ANITA3_dual_event_generator u_event_generator(.clk33_i(clk33_i),
 														  .clk125_i(clk125_i),
 														  .rst_i(clr_all_i),
@@ -214,7 +220,8 @@ module TRIGGER_INTERFACE( clk33_i,
 														  // Error
 														  .event_error_o(event_error),
 														  .CMD_o(CMD_o),
-														  .debug_o(debug_o));
+														  .debug_o(generator_debug));
+	wire [15:0] buffer_debug;
 	ANITA3_dual_event_buffers u_event_buffers(.clk33_i(clk33_i),
 													 .clk250_i(clk250_i),
 													 .event_wr_addr_i(event_write_addr),
@@ -227,7 +234,8 @@ module TRIGGER_INTERFACE( clk33_i,
 													 .rst_i(clr_all_i),
 													 .event_rd_addr_i(event_addr_i),
 													 .event_rd_dat_o(event_dat_o),
-													 .status_o(status_o));
+													 .status_o(status_o),
+													 .debug_o(buffer_debug));
 	// add more later
 	ANITA3_scalers u_scalers(.clk33_i(clk33_i),
 									 .refpulse_i(refpulse_i),
@@ -238,8 +246,11 @@ module TRIGGER_INTERFACE( clk33_i,
 									 .deadtime_i(deadtime),
 									 .c3po_i(current_clock_time),
 									 .scal_addr_i(scal_addr_i),
-									 .scal_dat_o(scal_dat_o));
+									 .scal_dat_o(scal_dat_o)
+									);
 
+	assign debug_o[0 +: 22] = generator_debug[22:0];
+	assign debug_o[23 +: 7] = buffer_debug[6:0];
 	assign trig_out_o = digitize;
 
 endmodule   

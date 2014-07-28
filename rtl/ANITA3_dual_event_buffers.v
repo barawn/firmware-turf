@@ -23,7 +23,8 @@ module ANITA3_dual_event_buffers(
 		input clear_evt_i,
 		output clear_evt_250_o,
 		input rst_i,
-		output [31:0] status_o
+		output [31:0] status_o,
+		output [15:0] debug_o
     );
 
 
@@ -75,4 +76,6 @@ module ANITA3_dual_event_buffers(
 
 	assign read_buffer_o = {1'b0,current_read_buffer_hold};
 	assign status_o = {{15{1'b0}},buffer_active[current_read_buffer],{10{1'b0}},legacy_buffer_active,current_read_buffer,clear_dual_event_pending};
+	assign debug_o[5:0] = status_o[5:0];
+	assign debug_o[6] = clear_evt_i;
 endmodule

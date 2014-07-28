@@ -192,7 +192,7 @@ module ANITA3_dual_event_generator(
 		if (state == IDLE && event_read_valid) buffer_pointer <= event_data_out[1:0];
 		
 		if (rst_i) event_count <= {16{1'b0}};
-		else if (state == START_EVENT) event_count <= event_count + 1;
+		else if (state == START_EVENT) event_count <= event_count + 2;
 		
 		if (evid_reset_i) next_event_id <= {epoch_i,{20{1'b0}}};
 		else if (state == STORE_LOW_PATTERN) next_event_id <= {epoch_i, next_event_id_without_epoch};

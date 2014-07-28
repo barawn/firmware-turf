@@ -38,7 +38,7 @@ clear_buffer_i : in  std_logic_vector(1 downto 0); -- used to generate RELEASE
 digitize_o : out std_logic; -- new: a 100 ns pulse from the time either of the pairs go into second hold - should work as there is a holdoff. 
 digitize_buffer_o : out std_logic_vector(1 downto 0); -- 2 bits for legacy - needs only one to indicate which
 		    															-- of the pairs is being digitized - NEW signal
-digitize_source_o : out std_logic_vector(3 downto 0); 
+digitize_source_o : out std_logic_vector(3 downto 0);  -- needs to be kept 100 ns.
 HOLD_o : out std_logic_vector(3 downto 0); --was below
 --HOLD_A : out std_logic;
 --HOLD_B : out std_logic;
@@ -88,6 +88,7 @@ signal st_counterI_1: std_logic_vector(4 downto 0):= (others =>'0');
 signal st_counterII_1: std_logic_vector(4 downto 0):= (others =>'0');
 
 signal digitize_counter: std_logic_vector(4 downto 0):= (others =>'0');
+signal trig_latched: std_logic_vector(3 downto 0):= (others =>'0');
 
 
 
@@ -133,6 +134,7 @@ begin
 		RELEASE <= "00";
 	elsif rising_edge(clk250_i) then
 		DO_HOLD <= trig_i(0) or trig_i(1) or trig_i(2) or trig_i(3);
+		if ((trig_i(0) or trig_i(1) or trig_i(2) or trig_i(3)) = '1') then trig_latched <= trig_i; end if;
 		dead_o <= (HOLD_D or HOLD_C) and (HOLD_B or HOLD_A); -- if even only one of the chip is held, we need to wait to start issuing triggers.
 		if clear_i = '1' then
 			case clear_buffer_i(0) is 
@@ -175,14 +177,14 @@ begin
 					FROZEN(0)<='1';
 					DO_HOLD_VEC(0)<='1';
 					FIRST_I <= not FIRST_I; -- change first only if it effectively triggered
-					digitize_source_o<=trig_i;
+					digitize_source_o<=trig_latched;
 					START_HOLDING <= "01";
 					veto_hold_counter<= "11001"; --when frozen, the last ~100ns of data are already recorded - need to wait until a new hold is issued
 				elsif  FROZEN(1) = '0' and veto_hold_counter = "00000" then 
 					FROZEN(1)<='1';
 					DO_HOLD_VEC(1)<='1';
 					FIRST_I <= not FIRST_I; -- change first only if it effectively triggered
-					digitize_source_o<=trig_i;
+					digitize_source_o<=trig_latched;
 					START_HOLDING <= "10";
 					veto_hold_counter<= "11001";
 				else
@@ -193,14 +195,14 @@ begin
 					FROZEN(1)<='1';
 					DO_HOLD_VEC(1)<='1';
 					FIRST_I <= not FIRST_I; -- change first only if it effectively triggered
-					digitize_source_o<=trig_i;
+					digitize_source_o<=trig_latched;
 					START_HOLDING <= "10";
 					veto_hold_counter<= "11001";
 				elsif  FROZEN(0) = '0' and veto_hold_counter = "00000" then 
 					FROZEN(0)<='1';
 					DO_HOLD_VEC(0)<='1';
 					FIRST_I <= not FIRST_I; -- change first only if it effectively triggered
-					digitize_source_o<=trig_i;
+					digitize_source_o<=trig_latched;
 					START_HOLDING <= "01";
 					veto_hold_counter<= "11001";
 				else

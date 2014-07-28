@@ -18,6 +18,7 @@ module ANITA3_simple_trigger( clk250_i,
 										L1_i,
 										trig_o,
 										scal_o,
+										disable_i,
 										refpulse_i,
 										mon_scal_o,
 										ant_mask_i,
@@ -42,6 +43,7 @@ module ANITA3_simple_trigger( clk250_i,
 	input refpulse_i;
 	output [2*NUM_PHI-1:0] mon_scal_o;
 	output [7:0] count_o;
+	input disable_i;
 	
 	wire [NUM_PHI-1:0] V_pol_phi;
 	wire [NUM_PHI-1:0] H_pol_phi;
@@ -75,6 +77,7 @@ module ANITA3_simple_trigger( clk250_i,
 	reg rf_count_flag = 0;
 	
 	reg [7:0] rf_count = {8{1'b0}};	
+	reg trig_disable = 0;
 	
 	generate
 		genvar i;
@@ -93,6 +96,8 @@ module ANITA3_simple_trigger( clk250_i,
 	endgenerate
 	
 	always @(posedge clk250_i) begin
+		trig_disable <= disable_i;
+		
 		V_pol_phi_del <= V_pol_phi;
 		H_pol_phi_del <= H_pol_phi;
 		H_pol_hold <= H_pol_phi_del;
@@ -101,7 +106,7 @@ module ANITA3_simple_trigger( clk250_i,
 		if ((H_rf_trigger || V_rf_trigger) && !trigger_holdoff) V_pol_pat <= V_pol_hold;		
 		H_rf_trigger <= |H_pol_trig;
 		V_rf_trigger <= |V_pol_trig;
-		rf_trigger <= (H_rf_trigger | V_rf_trigger) && !trigger_holdoff;
+		rf_trigger <= (H_rf_trigger | V_rf_trigger) && !trigger_holdoff && !trig_disable;
 		raw_rf_trigger <= {raw_rf_trigger[0],(H_rf_trigger | V_rf_trigger)};
 	
 		rf_count_flag <= (raw_rf_trigger[0] && !raw_rf_trigger[1]);
