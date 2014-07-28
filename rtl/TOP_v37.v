@@ -52,7 +52,7 @@ module TOP_v37(
 	parameter [7:0] VER_DAY = 27;
 	parameter [3:0] VER_MAJOR = 3;
 	parameter [3:0] VER_MINOR = 8;
-	parameter [3:0] VER_REV = 7;
+	parameter [7:0] VER_REV = 7;
 	parameter [3:0] VER_BOARDREV = 0;
 	parameter [31:0] VERSION = {VER_BOARDREV,VER_MONTH,VER_DAY,VER_MAJOR,VER_MINOR,VER_REV};
 
