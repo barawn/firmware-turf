@@ -126,6 +126,8 @@ module TRIGGER_INTERFACE( clk33_i,
 	
 	wire [7:0] rf_count;
 
+	reg [1:0] digitize_buffer_clk33 = {2{1'b0}};
+	
 	ANITA3_deadtime_counter u_deadtime(.clk250_i(clk250_i),
 												  .clk33_i(clk33_i),
 												  .dead_i(trigger_dead),
@@ -159,6 +161,10 @@ module TRIGGER_INTERFACE( clk33_i,
 															.buffer_status_o(buffer_status),
 															.HOLD_o(global_hold),
 															.dead_o(trigger_dead));
+
+	always @(posedge clk33_i) begin
+		digitize_buffer_clk33 <= {digitize_buffer_clk33[0],digitize_buffer[0]};
+	end
 	assign HOLD_o = {NUM_SURFS{global_hold}};
 	ANITA3_timebase u_timebase(.clk250_i(clk250_i),
 										.clk33_i(clk33_i),
@@ -248,8 +254,8 @@ module TRIGGER_INTERFACE( clk33_i,
 									 .scal_addr_i(scal_addr_i),
 									 .scal_dat_o(scal_dat_o)
 									);
-
-	assign debug_o[0 +: 22] = generator_debug[22:0];
+	assign debug_o[0] = digitize_buffer_clk33[1];
+	assign debug_o[1 +: 21] = generator_debug[22:1];
 	assign debug_o[23 +: 12] = buffer_debug[11:0];
 	assign trig_out_o = digitize;	
 

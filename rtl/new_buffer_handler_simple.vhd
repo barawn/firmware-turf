@@ -210,9 +210,12 @@ begin
 				end if;			
 			end if;
 		end if;
-
-			if RELEASE(0) = '1' then FROZEN(0)<='0';  end if; -- note: if both RELEASE and HOLD arrive at the same time, the trigger is also ignored - might be worth to modify to get thisd marginal case on.
-			if RELEASE(1) = '1' then FROZEN(1)<='0';  end if;
+			if state0 = SAMPLING then FROZEN(0)<='0'; end if;
+			if state0 = SAMPLING then FROZEN(1)<='0'; end if;
+			
+--
+--			if RELEASE(0) = '1' then FROZEN(0)<='0';  end if; -- note: if both RELEASE and HOLD arrive at the same time, the trigger is also ignored - might be worth to modify to get thisd marginal case on.
+--			if RELEASE(1) = '1' then FROZEN(1)<='0';  end if;
 	end if;
 end process;
 
@@ -261,7 +264,8 @@ begin
 					BUSY_I<= '1';
 					HOLD_A<='1';
 					HOLD_B<='1';
-					if FROZEN(0) = '0' then
+					if RELEASE(0) = '1'  then
+--					if FROZEN(0) = '0' then
 					  state0 <= WAIT_FOR_NEW_DATA;
 					else
 					  state0 <= HOLD_BOTH;
@@ -328,7 +332,8 @@ begin
 					BUSY_II<= '1';
 					HOLD_C<='1';
 					HOLD_D<='1';
-					if FROZEN(1) = '0' then
+					if RELEASE(1) = '1'  then
+--					if FROZEN(1) = '0' then
 					  state1 <= WAIT_FOR_NEW_DATA;
 					else
 					  state1 <= HOLD_BOTH;
