@@ -107,7 +107,7 @@ module ANITA3_simple_trigger( clk250_i,
 		rf_count_flag <= (raw_rf_trigger[0] && !raw_rf_trigger[1]);
 		
 		if (rf_count_flag) raw_rf_count <= raw_rf_count + 1;
-		if (rf_count_flag && !trigger_holdoff) rf_count <= raw_rf_count;
+		if (rf_count_flag && trigger_holdoff) rf_count <= raw_rf_count;
 	end
 	
 	ANITA3_trigger_holdoff u_rf_holdoff(.clk250_i(clk250_i),

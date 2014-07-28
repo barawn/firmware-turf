@@ -273,13 +273,15 @@ module ANITA3_dual_event_generator(
 				event_data <= event_data_out;
 				event_read_enable <= 1;
 			end
+			// Store at the 250 MHz position.
+			// The 133 MHz position is left open.
 			STORE_CLOCK_LOW: begin
-				event_addr_pointer <= 6'h02;
+				event_addr_pointer <= 6'h12;
 				event_data <= event_data_out;
 				event_read_enable <= 1;
 			end
 			STORE_CLOCK_HIGH: begin
-				event_addr_pointer <= 6'h03;
+				event_addr_pointer <= 6'h13;
 				event_data <= event_data_out;
 				event_read_enable <= 1;
 			end
@@ -311,5 +313,6 @@ module ANITA3_dual_event_generator(
 	assign debug_o[1 +: 4] = state;
 	assign debug_o[5] = surf_command_busy;
 	assign debug_o[6] = surf_command_done;
-	assign debug_o[34:7] = {34-7+1{1'b0}};
+	assign debug_o[7 +: 16] = event_data_out;
+	assign debug_o[34:23] = {34-23+1{1'b0}};
 endmodule

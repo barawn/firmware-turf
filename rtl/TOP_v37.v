@@ -52,7 +52,7 @@ module TOP_v37(
 	parameter [7:0] VER_DAY = 27;
 	parameter [3:0] VER_MAJOR = 3;
 	parameter [3:0] VER_MINOR = 8;
-	parameter [3:0] VER_REV = 6;
+	parameter [3:0] VER_REV = 7;
 	parameter [3:0] VER_BOARDREV = 0;
 	parameter [31:0] VERSION = {VER_BOARDREV,VER_MONTH,VER_DAY,VER_MAJOR,VER_MINOR,VER_REV};
 
@@ -205,7 +205,7 @@ module TOP_v37(
 		  (* box_type = "black_box" *)
 		  chipscope_icon u_icon(.CONTROL0(ila_control),.CONTROL1(vio_control));
 		  (* box_type = "black_box" *)
-		  turf_ila u_ila(.CONTROL(ila_control),.CLK(CLK33),.TRIG0({clr_all,trigger_debug[15:0],HOLD[3:0],register_debug[13:0]}));
+		  turf_ila u_ila(.CONTROL(ila_control),.CLK(CLK33),.TRIG0(trigger_debug));
 		  (* box_type = "black_box" *)
 		  turf_vio u_vio(.CONTROL(vio_control),.ASYNC_IN(vio_async_out));
 		end
