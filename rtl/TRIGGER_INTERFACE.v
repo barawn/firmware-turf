@@ -250,8 +250,8 @@ module TRIGGER_INTERFACE( clk33_i,
 									);
 
 	assign debug_o[0 +: 22] = generator_debug[22:0];
-	assign debug_o[23 +: 7] = buffer_debug[6:0];
-	assign trig_out_o = digitize;
+	assign debug_o[23 +: 12] = buffer_debug[11:0];
+	assign trig_out_o = digitize;	
 
 endmodule   
    
