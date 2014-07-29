@@ -1,3 +1,4 @@
+`timescale 1ns / 1ps
 ////////////////////////////////////////////////////////////////////////////////
 // This file is a part of the Antarctic Impulsive Transient Antenna (ANITA)
 // project, a collaborative scientific effort between multiple institutions. For
@@ -254,8 +255,7 @@ module TRIGGER_INTERFACE( clk33_i,
 									 .scal_addr_i(scal_addr_i),
 									 .scal_dat_o(scal_dat_o)
 									);
-	assign debug_o[0] = digitize_buffer_clk33[1];
-	assign debug_o[1 +: 21] = generator_debug[22:1];
+	assign debug_o[0 +: 22] = generator_debug[22:0];
 	assign debug_o[23 +: 12] = buffer_debug[11:0];
 	assign trig_out_o = digitize;	
 

@@ -1,3 +1,4 @@
+`timescale 1ns / 1ps
 ////////////////////////////////////////////////////////////////////////////////
 // This file is a part of the Antarctic Impulsive Transient Antenna (ANITA)
 // project, a collaborative scientific effort between multiple institutions. For

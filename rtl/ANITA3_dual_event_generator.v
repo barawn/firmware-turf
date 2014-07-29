@@ -191,8 +191,9 @@ module ANITA3_dual_event_generator(
 	
 		if (state == IDLE && event_read_valid) buffer_pointer <= event_data_out[1:0];
 		
-		if (rst_i) event_count <= {16{1'b0}};
-		else if (state == START_EVENT) event_count <= event_count + 2;
+		// Start with event ID 1 to Make Ryan Happy.
+		if (rst_i) event_count <= 16'h0001;
+		else if (state == ISSUE_EVENT_READY) event_count <= event_count + 2;
 		
 		if (evid_reset_i) next_event_id <= {epoch_i,{20{1'b0}}};
 		else if (state == STORE_LOW_PATTERN) next_event_id <= {epoch_i, next_event_id_without_epoch};
@@ -309,10 +310,10 @@ module ANITA3_dual_event_generator(
 	assign next_id_o = next_event_id;
 	assign event_error_o = (state == ERROR);
 	assign event_done_o = (state == ISSUE_EVENT_READY);
-	assign debug_o[0] = cmd_debug;
+	assign debug_o[0] = event_done_o;
 	assign debug_o[1 +: 4] = state;
 	assign debug_o[5] = surf_command_busy;
 	assign debug_o[6] = surf_command_done;
-	assign debug_o[7 +: 16] = event_data_out;
+	assign debug_o[7 +: 16] = event_data;
 	assign debug_o[34:23] = {34-23+1{1'b0}};
 endmodule

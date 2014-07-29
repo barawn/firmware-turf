@@ -1,3 +1,4 @@
+`timescale 1ns / 1ps
 ////////////////////////////////////////////////////////////////////////////////
 // This file is a part of the Antarctic Impulsive Transient Antenna (ANITA)
 // project, a collaborative scientific effort between multiple institutions. For
@@ -6,7 +7,7 @@
 // All rights reserved.
 //
 // Author: Patrick Allison, Ohio State University (allison.122@osu.edu)
-// Author:
+// Author: Luca Macchiarulo, University of Hawaii (lucam@hawaii.edu)
 // Author:
 ////////////////////////////////////////////////////////////////////////////////
 

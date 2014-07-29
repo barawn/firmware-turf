@@ -211,7 +211,7 @@ begin
 			end if;
 		end if;
 			if state0 = SAMPLING then FROZEN(0)<='0'; end if;
-			if state0 = SAMPLING then FROZEN(1)<='0'; end if;
+			if state1 = SAMPLING then FROZEN(1)<='0'; end if;
 			
 --
 --			if RELEASE(0) = '1' then FROZEN(0)<='0';  end if; -- note: if both RELEASE and HOLD arrive at the same time, the trigger is also ignored - might be worth to modify to get thisd marginal case on.
