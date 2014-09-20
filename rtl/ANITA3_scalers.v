@@ -14,6 +14,7 @@ module ANITA3_scalers(
 		clk33_i,
 		L3_i,
 		L3_mon_i,
+		L1_i,
 		refpulse_i,
 		pps_i,
 		sec_i,
@@ -28,6 +29,10 @@ module ANITA3_scalers(
 	input clk33_i;
 	input [2*NUM_PHI-1:0] L3_i;
 	input [2*NUM_PHI-1:0] L3_mon_i;
+	
+	input [2*NUM_PHI-1:0] L1_i;
+	
+	
 	input refpulse_i;
 	input pps_i;
 	input [15:0] sec_i;
@@ -46,9 +51,15 @@ module ANITA3_scalers(
 	reg [2*NUM_PHI-1:0] l3_reg2 = {2*NUM_PHI{1'b0}};
 	reg [2*NUM_PHI-1:0] l3_mon_reg = {2*NUM_PHI{1'b0}};
 	reg [2*NUM_PHI-1:0] l3_mon_reg2 = {2*NUM_PHI{1'b0}};
+
+	reg [2*NUM_PHI-1:0] l1_reg = {2*NUM_PHI{1'b0}};
+	reg [2*NUM_PHI-1:0] l1_reg2 = {2*NUM_PHI{1'b0}};
 	
 	wire [2*NUM_PHI-1:0] l3_count_flag = l3_reg & ~l3_reg2;
 	wire [2*NUM_PHI-1:0] l3_mon_flag = l3_mon_reg & ~l3_mon_reg2;
+
+	wire [2*NUM_PHI-1:0] l1_count_flag = l1_reg & ~l1_reg2;
+
 	
 	reg [31:0] output_data;
 	wire [7:0] refpulse_count;
@@ -59,9 +70,19 @@ module ANITA3_scalers(
 											  .count_i(refpulse_reg[0] && !refpulse_reg[1]),
 											  .scaler_o(refpulse_scaler));
 	// 64 overall scalers, but they map to 16 total addresses.
-	wire [7:0] l3_scalers_hold[4*NUM_PHI-1:0];
-	wire [31:0] l3_scalers_unmuxed[15:0];
-	wire [31:0] l3_scalers_mux = l3_scalers_unmuxed[scal_addr_i[3:0]];
+	wire [7:0] l3_scalers_hold[4*NUM_PHI-1:0];	
+	// 32 L1 scalers, mapping to 16 addresses
+	wire [15:0] l1_scalers_hold[2*NUM_PHI-1:0];
+
+//	wire [31:0] l3_scalers_unmuxed[15:0];
+	// 32 + 64  L1 and L3 scalers,  the first mapping to 16 addresses, the next 64 mapping to the next 16 addresses	
+	wire [31:0] l1_l3_scalers_unmuxed[31:0];
+	
+	
+	
+//	wire [31:0] l3_scalers_mux = l3_scalers_unmuxed[scal_addr_i[3:0]];
+	wire [31:0] l1_l3_scalers_mux = l1_l3_scalers_unmuxed[scal_addr_i[4:0]];
+	
 	generate
 		genvar i;
 		// This goes from 0-31.
@@ -73,25 +94,47 @@ module ANITA3_scalers(
 			ANITA3_scaler u_scaler_l3_mon(.clk_i(clk33_i),
 											  .pps_i(pps_i),
 											  .count_i(l3_mon_flag[i]),
-											  .scaler_o(l3_scalers_hold[2*NUM_PHI+i]));
-			// This now goes from 0-7.
+											  .scaler_o(l3_scalers_hold[2*NUM_PHI+i]));									  										
+			// This now goes from 16-23.
 			// Sequentially this goes
-			// 0 = [0][0 +: 8]
-			// 1 = [0][8 +: 8]
-			// 2 = [0][16 +: 8]
-			// 3 = [0][24 +: 8]
-			// 4 = [1][0 +: 8]
+			// 0 = [16][0 +: 8]
+			// 1 = [16][8 +: 8]
+			// 2 = [16][16 +: 8]
+			// 3 = [16][24 +: 8]
+			// 4 = [17][0 +: 8]
 			// etc.
-			assign l3_scalers_unmuxed[i/4][8*(i%4) +: 8] = l3_scalers_hold[i];
-			// This now goes from 8-15.
+			assign l1_l3_scalers_unmuxed[i/4 + 16][8*(i%4) +: 8] = l3_scalers_hold[i];
+			// This now goes from 24-31.
 			// Sequentially this goes
-			// 0 = [8][0 +: 8]
-			// 1 = [8][8 +: 8]
-			// 2 = [8][16 +: 8]
-			// 3 = [8][24 +: 8]
-			assign l3_scalers_unmuxed[i/4 + (2*NUM_PHI/4)][8*(i%4) +: 8] = l3_scalers_hold[2*NUM_PHI+i];
+			// 0 = [24][0 +: 8]
+			// 1 = [24][8 +: 8]
+			// 2 = [24][16 +: 8]
+			// 3 = [24][24 +: 8]
+			assign l1_l3_scalers_unmuxed[i/4 + (2*NUM_PHI/4) + 16][8*(i%4) +: 8] = l3_scalers_hold[2*NUM_PHI+i];
 		end
 	endgenerate
+
+
+
+	generate
+		genvar j;
+		// This goes from 0-31.
+		for (j=0;j<2*NUM_PHI;j=j+1) begin : L1
+			ANITA3_scaler #(.WIDTH(16), .PRESCALE(0)) u_scaler_l1(.clk_i(clk33_i), //16 bits 
+											  .pps_i(pps_i),
+											  .count_i(l1_count_flag[j]),
+											  .scaler_o(l1_scalers_hold[j]));							  										
+			// Sequentially this goes
+			// 0 = [0][0 +: 16]
+			// 1 = [0][16 +: 16]
+			// 2 = [1][0 +: 16]
+			// 3 = [1][16 +: 16]
+			// 4 = [2][0 +: 16]
+			// etc.
+			assign l1_l3_scalers_unmuxed[j/2][16*(j%2) +: 16] = l1_scalers_hold[j]; // starting from 0 to 31
+		end
+	endgenerate
+
 	
 	always @(posedge clk33_i) begin
 		refpulse_reg <= {refpulse_reg[0],refpulse_i};
@@ -99,13 +142,19 @@ module ANITA3_scalers(
 		l3_mon_reg2 <= l3_mon_reg;
 		l3_reg <= L3_i;
 		l3_reg2 <= l3_reg;
+		l1_reg <= L1_i;
+		l1_reg2 <= l1_reg;		
+		
 	end
 	// Scalers map to 0x10-0x1F.	
 	// 100000 = 0x20
 	// 101001 = 0x29 = PPS
 	// 100111 = 0x27 = C3P0 250
-	always @(scal_addr_i or l3_scalers_mux or c3po_i) begin
-		if (!scal_addr_i[5]) output_data <= l3_scalers_mux;
+	
+//	always @(scal_addr_i or l3_scalers_mux or c3po_i) begin
+	always @(scal_addr_i or l1_l3_scalers_mux or c3po_i) begin
+//		if (!scal_addr_i[5]) output_data <= l3_scalers_mux;
+		if (!scal_addr_i[5]) output_data <= l1_l3_scalers_mux;
 		else begin
 			if (!scal_addr_i[0]) output_data <= refpulse_scaler;
 			else if (!scal_addr_i[2]) output_data <= {sec_i,deadtime_i};

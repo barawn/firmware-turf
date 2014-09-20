@@ -85,7 +85,8 @@ module TURF_infrastructure(
 	DCM #(.CLK_FEEDBACK("2X"),.CLKOUT_PHASE_SHIFT("NONE"),
 			.DLL_FREQUENCY_MODE("LOW"),.STARTUP_WAIT("TRUE")) u_multip(.CLKIN(CLK125),
 															 .CLKFB(CLK250),
-															 .RST(dcm_reset),
+//															 .RST(dcm_reset),
+															 .RST(dcm_reset_i), //LM: wrong name? Was not connected before
 															 .LOCKED(dcm_locked),
 															 .STATUS(dcm_status),
 															 .CLK2X(CLK250_to_BUFG),

@@ -19,6 +19,7 @@ module ANITA3_simple_trigger( clk250_i,
 										L1_i,
 										trig_o,
 										scal_o,
+										scal_L1_o,
 										disable_i,
 										refpulse_i,
 										mon_scal_o,
@@ -41,6 +42,10 @@ module ANITA3_simple_trigger( clk250_i,
    output 			  trig_o;
 	output [2*NUM_PHI-1:0] phi_o;
 	output [2*NUM_PHI-1:0] scal_o;
+	output [2*NUM_PHI-1:0] scal_L1_o;
+	
+	
+	
 	input refpulse_i;
 	output [2*NUM_PHI-1:0] mon_scal_o;
 	output [7:0] count_o;
@@ -83,16 +88,25 @@ module ANITA3_simple_trigger( clk250_i,
 	generate
 		genvar i;
 		for (i=0;i<NUM_PHI;i=i+1) begin : RF_TRIG
+			srl_oneshot l1v_scaler(.clk250_i(clk250_i),.trig_i(V_pol_phi[i]), 
+													.scal_o(scal_L1_o[i]));
+			srl_oneshot l1h_scaler(.clk250_i(clk250_i),.trig_i(H_pol_phi[i]), 
+													.scal_o(scal_L1_o[NUM_PHI+i]));
+
 			srl_oneshot_with_ref v_scaler(.clk250_i(clk250_i),.trig_i(V_pol_trig[i]),.pulse_i(refpulse_i), 
 													.scal_o(scal_o[i]), .mon_scal_o(mon_scal_o[i]));
 			srl_oneshot_with_ref h_scaler(.clk250_i(clk250_i),.trig_i(H_pol_trig[i]),.pulse_i(refpulse_i), 
 													.scal_o(scal_o[NUM_PHI+i]), .mon_scal_o(mon_scal_o[NUM_PHI+i]));
+
+
 			always @(posedge clk250_i) begin
 				// The i+NUM_PHI-1 makes sure that we're always taking the modulus of a positive number.
 				// It works out to (i-1), wrapping around from 0-15.
-				V_pol_trig[i] <= ((V_pol_phi[i]) && (V_pol_phi[(i+NUM_PHI-1)%NUM_PHI] || V_pol_phi[(i+1)%NUM_PHI])) && !phi_mask_i[i];
-				H_pol_trig[i] <= ((H_pol_phi[i]) && (H_pol_phi[(i+NUM_PHI-1)%NUM_PHI] || H_pol_phi[(i+1)%NUM_PHI])) && !phi_mask_i[NUM_PHI+i];
-			end
+//				V_pol_trig[i] <= ((V_pol_phi[i]) && (V_pol_phi[(i+NUM_PHI-1)%NUM_PHI] || V_pol_phi[(i+1)%NUM_PHI])) && !phi_mask_i[i];
+//				H_pol_trig[i] <= ((H_pol_phi[i]) && (H_pol_phi[(i+NUM_PHI-1)%NUM_PHI] || H_pol_phi[(i+1)%NUM_PHI])) && !phi_mask_i[NUM_PHI+i];
+				V_pol_trig[i] <= ((V_pol_phi[i]) && (V_pol_phi[(i+1)%NUM_PHI])) && !phi_mask_i[i]; //LM: only a phi sector anded with its adjacent
+				H_pol_trig[i] <= ((H_pol_phi[i]) && (H_pol_phi[(i+1)%NUM_PHI])) && !phi_mask_i[NUM_PHI+i];	
+				end
 		end
 	endgenerate
 	
@@ -108,6 +122,7 @@ module ANITA3_simple_trigger( clk250_i,
 		H_rf_trigger <= |H_pol_trig;
 		V_rf_trigger <= |V_pol_trig;
 		rf_trigger <= (H_rf_trigger | V_rf_trigger) && !trigger_holdoff && !trig_disable;
+//		rf_trigger <= ((|H_pol_trig) | (|V_rf_trigger)) && !trigger_holdoff && !trig_disable; //LM see if it still respects timing - saves 1 cycle
 		raw_rf_trigger <= {raw_rf_trigger[0],(H_rf_trigger | V_rf_trigger)};
 	
 		rf_count_flag <= (raw_rf_trigger[0] && !raw_rf_trigger[1]);

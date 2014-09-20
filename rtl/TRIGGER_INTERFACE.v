@@ -33,6 +33,7 @@ module TRIGGER_INTERFACE( clk33_i,
 			  
 			  disable_i,
 			  soft_trig_i,
+			  soft_trig_33_i,
 			  pps1_en_i,
 			  pps1_time_i,
 			  pps2_trig_i,
@@ -52,6 +53,9 @@ module TRIGGER_INTERFACE( clk33_i,
    parameter NUM_HOLD = 4;
    parameter NUM_SURFS = 12;
 	parameter NUM_PHI = 16;
+	
+	parameter BUF_PER_EVENT = "SINGLE";
+
 	
    input clk33_i;
    input clk125_i;
@@ -77,6 +81,7 @@ module TRIGGER_INTERFACE( clk33_i,
 	input disable_i;
 
    input 			   soft_trig_i;
+   input 			   soft_trig_33_i;
    input 			   pps1_en_i;
 	input [31:0] 		pps1_time_i;
    input 			   pps2_trig_i;
@@ -105,6 +110,10 @@ module TRIGGER_INTERFACE( clk33_i,
 	wire [NUM_PHI*2-1:0] phi_pattern;
 	wire [2*NUM_PHI-1:0] phi_scaler;	
 	wire [2*NUM_PHI-1:0] phi_mon_scaler;
+
+	wire [2*NUM_PHI-1:0] L1_scaler;	
+	
+	
 	
 	wire [3:0] buffer_status;
 
@@ -129,12 +138,16 @@ module TRIGGER_INTERFACE( clk33_i,
 
 	reg [1:0] digitize_buffer_clk33 = {2{1'b0}};
 	
-	ANITA3_deadtime_counter u_deadtime(.clk250_i(clk250_i),
+	wire [21:0] deadtime_full_debug;
+
+	ANITA3_deadtime_counter_v2 u_deadtime(.clk250_i(clk250_i),
 												  .clk33_i(clk33_i),
 												  .dead_i(trigger_dead),
 												  .pps_i(pps_i),
 												  .pps_clk33_i(pps_clk33_i),
-												  .deadtime_o(deadtime));
+												  .deadtime_o(deadtime),
+												  .deadtime_full_debug(deadtime_full_debug)
+												  );
 
    ANITA3_simple_trigger u_trigger(.clk33_i(clk33_i),
 											  .clk250_i(clk250_i),
@@ -143,6 +156,7 @@ module TRIGGER_INTERFACE( clk33_i,
 											  .phi_mask_i(phi_mask_i),
 											  .disable_i(disable_i),
 											  .scal_o(phi_scaler),
+											  .scal_L1_o(L1_scaler),
 											  .refpulse_i(refpulse_i),
 											  .mon_scal_o(phi_mon_scaler),
 											  .L1_i(L1_i),
@@ -150,18 +164,93 @@ module TRIGGER_INTERFACE( clk33_i,
 											  .phi_o(phi_pattern),
 											  .count_o(rf_count));
 	wire [NUM_HOLD-1:0] global_hold;
-   new_buffer_handler_simple u_buffer_manager(.clk250_i(clk250_i),
-															.rst_i(clr_all_i),
-															.trig_i(trigger),
-															.trig_buffer_o(trig_buffer),
-															.clear_i(clr_buffer_250),
-															.clear_buffer_i(clear_buffer),
-															.digitize_o(digitize),
-															.digitize_buffer_o(digitize_buffer),
-															.digitize_source_o(digitize_source),
-															.buffer_status_o(buffer_status),
-															.HOLD_o(global_hold),
-															.dead_o(trigger_dead));
+					
+   wire [1:0] debug_state;
+   wire [5:0] debug_buff;
+	wire [7:0] event_write_addr;
+	wire [15:0] event_write_dat;
+	wire event_write;
+	wire event_done;
+	wire [34:0] generator_debug;
+	wire [15:0] buffer_debug;
+
+   ANITA3_event_generator #(.BUF_PER_EVENT(BUF_PER_EVENT)) u_event_generator(.clk33_i(clk33_i),
+                                                  .clk125_i(clk125_i),
+                                                  .rst_i(clr_all_i),
+                                                  // Command to begin event generation, and all details.
+                                                  .digitize_i(digitize),
+                                                  .digitize_buffer_i(digitize_buffer),
+                                                  .digitize_source_i(digitize_source),
+                                                  .buffer_status_i(buffer_status),
+                                                  .pattern_i(phi_pattern),
+                                                  .pps_time_i(event_pps_time),
+                                                  .clock_time_i(event_clock_time),
+                                                  .rf_count_i(rf_count),
+                                                  // Event ID control.
+                                                  .epoch_i(epoch_i),
+                                                  .evid_reset_i(evid_reset_i),
+                                                  .next_id_o(next_id_o),
+                                                  // Event data
+                                                  .event_addr_o(event_write_addr),
+                                                  .event_dat_o(event_write_dat),
+                                                  .event_wr_o(event_write),
+                                                  .event_done_o(event_done),
+                                                  // Error
+                                                  .event_error_o(event_error),
+                                                  .CMD_o(CMD_o),
+                                                  .debug_o(generator_debug));
+   ANITA3_event_buffers_v2 #(.BUF_PER_EVENT(BUF_PER_EVENT)) u_event_buffers(.clk33_i(clk33_i),
+                                           .clk250_i(clk250_i),
+                                           .event_wr_addr_i(event_write_addr),
+                                           .event_wr_dat_i(event_write_dat),
+                                           .event_wr_i(event_write),
+                                           .event_done_i(event_done),
+                                           .clear_evt_i(clr_evt_i),
+                                           .clear_evt_250_o(clr_buffer_250),
+                                           .read_buffer_o(clear_buffer),
+                                           .rst_i(clr_all_i),
+                                           .event_rd_addr_i(event_addr_i),
+                                           .event_rd_dat_o(event_dat_o),
+                                           .status_o(status_o),
+                                           .debug_o(buffer_debug));
+
+
+   generate
+      if (BUF_PER_EVENT == "SINGLE") begin : SINGLE_MGR
+         ANITA3_buffer_manager u_buffer_manager( 
+               .clk250_i(clk250_i),
+               .rst_i(clr_all_i),
+               .trig_i(trigger),					
+               .trig_buffer_o(trig_buffer),
+               .clear_i(clr_buffer_250),
+               .clear_buffer_i(clear_buffer),
+               .digitize_o(digitize),
+               .digitize_buffer_o(digitize_buffer),
+               .digitize_source_o(digitize_source),
+               .buffer_status_o(buffer_status),
+               .HOLD_o(global_hold),
+               .dead_o(trigger_dead)
+               );
+      end else begin : DUAL_MGR
+         new_buffer_handler_simpleFSM3 
+             u_buffer_manager(.clk250_i(clk250_i),
+                              .rst_i(clr_all_i),
+                              .trig_i(trigger),
+                              .trig_buffer_o(trig_buffer),
+                              .clear_i(clr_buffer_250),
+                              .clear_buffer_i(clear_buffer),
+                              .digitize_o(digitize),
+                              .digitize_buffer_o(digitize_buffer),
+                              .digitize_source_o(digitize_source),
+                              .buffer_status_o(buffer_status),
+                              .HOLD_o(global_hold),
+                              .dead_o(trigger_dead),
+      //																	.debug_state(debug_state));
+                              .debug_o(debug_buff));
+
+
+      end
+   endgenerate
 
 	always @(posedge clk33_i) begin
 		digitize_buffer_clk33 <= {digitize_buffer_clk33[0],digitize_buffer[0]};
@@ -198,56 +287,14 @@ module TRIGGER_INTERFACE( clk33_i,
 	// Next 16-bits: Clock count low
 	// Next 16-bits: Clock count high
 	// This is 6 clocks. Should be plenty.
-	wire [7:0] event_write_addr;
-	wire [15:0] event_write_dat;
-	wire event_write;
-	wire event_done;
-	wire [34:0] generator_debug;
-	ANITA3_dual_event_generator u_event_generator(.clk33_i(clk33_i),
-														  .clk125_i(clk125_i),
-														  .rst_i(clr_all_i),
-														  // Command to begin event generation, and all details.
-														  .digitize_i(digitize),
-														  .digitize_buffer_i(digitize_buffer),
-														  .digitize_source_i(digitize_source),
-														  .buffer_status_i(buffer_status),
-														  .pattern_i(phi_pattern),
-														  .pps_time_i(event_pps_time),
-														  .clock_time_i(event_clock_time),
-														  .rf_count_i(rf_count),
-														  // Event ID control.
-														  .epoch_i(epoch_i),
-														  .evid_reset_i(evid_reset_i),
-														  .next_id_o(next_id_o),
-														  // Event data
-														  .event_addr_o(event_write_addr),
-														  .event_dat_o(event_write_dat),
-														  .event_wr_o(event_write),
-														  .event_done_o(event_done),
-														  // Error
-														  .event_error_o(event_error),
-														  .CMD_o(CMD_o),
-														  .debug_o(generator_debug));
-	wire [15:0] buffer_debug;
-	ANITA3_dual_event_buffers u_event_buffers(.clk33_i(clk33_i),
-													 .clk250_i(clk250_i),
-													 .event_wr_addr_i(event_write_addr),
-													 .event_wr_dat_i(event_write_dat),
-													 .event_wr_i(event_write),
-													 .event_done_i(event_done),
-													 .clear_evt_i(clr_evt_i),
-													 .clear_evt_250_o(clr_buffer_250),
-													 .read_buffer_o(clear_buffer),
-													 .rst_i(clr_all_i),
-													 .event_rd_addr_i(event_addr_i),
-													 .event_rd_dat_o(event_dat_o),
-													 .status_o(status_o),
-													 .debug_o(buffer_debug));
-	// add more later
+
+
+
 	ANITA3_scalers u_scalers(.clk33_i(clk33_i),
 									 .refpulse_i(refpulse_i),
 									 .L3_i(phi_scaler),
 									 .L3_mon_i(phi_mon_scaler),
+									 .L1_i(L1_scaler),
 									 .pps_i(pps_clk33_i),
 									 .sec_i(current_pps_time),
 									 .deadtime_i(deadtime),
@@ -255,8 +302,12 @@ module TRIGGER_INTERFACE( clk33_i,
 									 .scal_addr_i(scal_addr_i),
 									 .scal_dat_o(scal_dat_o)
 									);
+
+   
+
 	assign debug_o[0 +: 22] = generator_debug[22:0];
 	assign debug_o[23 +: 12] = buffer_debug[11:0];
+
 	assign trig_out_o = digitize;	
 
 endmodule   

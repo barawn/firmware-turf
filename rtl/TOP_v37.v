@@ -47,14 +47,16 @@ module TOP_v37(
 		// input [`NUM_SURFS*2-1:0] SURF_IN		
     );
 
+   parameter BUF_PER_EVENT = "SINGLE";
 	parameter DEBUG = "YES";
-	parameter [3:0] VER_MONTH = 7;
-	parameter [7:0] VER_DAY = 29;
+	parameter [3:0] VER_MONTH = 9;
+	parameter [7:0] VER_DAY = 19;
 	parameter [3:0] VER_MAJOR = 3;
-	parameter [3:0] VER_MINOR = 8;
-	parameter [7:0] VER_REV = 13;
-	parameter [3:0] VER_BOARDREV = 0;
+	parameter [3:0] VER_MINOR = 8 + (BUF_PER_EVENT == "SINGLE");
+	parameter [7:0] VER_REV = 21;
+	parameter [3:0] VER_BOARDREV = 4'h0;
 	parameter [31:0] VERSION = {VER_BOARDREV,VER_MONTH,VER_DAY,VER_MAJOR,VER_MINOR,VER_REV};
+
 
 	// Infrastructure.
 	wire [`NUM_SURFS*4-1:0] L1;
@@ -151,13 +153,13 @@ module TOP_v37(
 															  .TURF_DIO(TURF_DIO),
 															  .debug_o(register_debug));
 
-	ANITA3_pps_trigger u_pps_trig(.clk33_i(CLK33),
-											.pps_i(PPS_BURST),
-											.disable_i(disable_evt),
-											.en_i(en_pps2_trig),
-											.trig_o(pps2_trig));
-
-	TRIGGER_INTERFACE u_trigger_interface(.clk33_i(CLK33),
+	ANITA3_pps_register u_pps2_reg(.clk250_i(CLK250),
+											.clk33_i(CLK33),
+											.pps_i(PPS_BURST && !disable_evt && en_pps2_trig),
+											.pps_o(pps2_trig)
+											);
+					
+	TRIGGER_INTERFACE #(.BUF_PER_EVENT(BUF_PER_EVENT)) u_trigger_interface(.clk33_i(CLK33),
 													  .clk125_i(CLK125),
 													  .clk250_i(CLK250),
 													  .clk250b_i(CLK250B),
@@ -182,6 +184,7 @@ module TOP_v37(
 													  // FIX THIS.
 													  // This should be soft OR ext trig.
 													  .soft_trig_i(soft_or_ext),
+													  .soft_trig_33_i(soft_trig),
 													  // FIX THIS.
 													  // This should be registered or something.
 													  .pps1_time_i(pps_trig_time),
@@ -208,7 +211,8 @@ module TOP_v37(
 		  (* box_type = "black_box" *)
 		  chipscope_icon u_icon(.CONTROL0(ila_control),.CONTROL1(vio_control));
 		  (* box_type = "black_box" *)
-		  turf_ila u_ila(.CONTROL(ila_control),.CLK(CLK33),.TRIG0(trigger_debug));
+//		  turf_ila u_ila(.CONTROL(ila_control),.CLK(CLK33),.TRIG0({trigger_debug[12:8],register_debug[21:0],trigger_debug[7:0]}));
+		  turf_ila u_ila(.CONTROL(ila_control),.CLK(CLK33),.TRIG0({trigger_debug}));
 		  (* box_type = "black_box" *)
 		  turf_vio u_vio(.CONTROL(vio_control),.ASYNC_IN(vio_async_out));
 		end

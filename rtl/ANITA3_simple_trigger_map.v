@@ -62,26 +62,26 @@ module ANITA3_simple_trigger_map(
 	
 	// We're temporarily switching phi sectors 2 and 5.
 // CORRECT
-//	assign V_pol_phi_in[2] = SURF_L1[3][0];
-//	assign V_pol_phi_in[6] = SURF_L1[3][1];
-//	assign H_pol_phi_in[2] = SURF_L1[3][2];
-//	assign H_pol_phi_in[6] = SURF_L1[3][3];
-//
-//	assign V_pol_phi_in[1] = SURF_L1[4][0];
-//	assign V_pol_phi_in[5] = SURF_L1[4][1];
-//	assign H_pol_phi_in[1] = SURF_L1[4][2];
-//	assign H_pol_phi_in[5] = SURF_L1[4][3];
-
-// WRONG
-	assign V_pol_phi_in[5] = SURF_L1[3][0];
+	assign V_pol_phi_in[2] = SURF_L1[3][0];
 	assign V_pol_phi_in[6] = SURF_L1[3][1];
-	assign H_pol_phi_in[5] = SURF_L1[3][2];
+	assign H_pol_phi_in[2] = SURF_L1[3][2];
 	assign H_pol_phi_in[6] = SURF_L1[3][3];
 
 	assign V_pol_phi_in[1] = SURF_L1[4][0];
-	assign V_pol_phi_in[2] = SURF_L1[4][1];
+	assign V_pol_phi_in[5] = SURF_L1[4][1];
 	assign H_pol_phi_in[1] = SURF_L1[4][2];
-	assign H_pol_phi_in[2] = SURF_L1[4][3];
+	assign H_pol_phi_in[5] = SURF_L1[4][3];
+
+// WRONG
+//	assign V_pol_phi_in[5] = SURF_L1[3][0];
+//	assign V_pol_phi_in[6] = SURF_L1[3][1];
+//	assign H_pol_phi_in[5] = SURF_L1[3][2];
+//	assign H_pol_phi_in[6] = SURF_L1[3][3];
+//
+//	assign V_pol_phi_in[1] = SURF_L1[4][0];
+//	assign V_pol_phi_in[2] = SURF_L1[4][1];
+//	assign H_pol_phi_in[1] = SURF_L1[4][2];
+//	assign H_pol_phi_in[2] = SURF_L1[4][3];
 
 	assign V_pol_phi_in[3] = SURF_L1[5][0];
 	assign V_pol_phi_in[7] = SURF_L1[5][1];
