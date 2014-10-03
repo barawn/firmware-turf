@@ -47,7 +47,7 @@ module TOP_v37(
 		// input [`NUM_SURFS*2-1:0] SURF_IN		
     );
 
-   parameter BUF_PER_EVENT = "DOUBLE";
+   parameter BUF_PER_EVENT = "SINGLE";
 	parameter DEBUG = "YES";
 	parameter [3:0] VER_MONTH = 9;
 	parameter [7:0] VER_DAY = 19;
