@@ -47,13 +47,13 @@ module TOP_v37(
 		// input [`NUM_SURFS*2-1:0] SURF_IN		
     );
 
-   parameter BUF_PER_EVENT = "SINGLE";
+   parameter BUF_PER_EVENT = "DOUBLE";
 	parameter DEBUG = "YES";
 	parameter [3:0] VER_MONTH = 9;
 	parameter [7:0] VER_DAY = 19;
 	parameter [3:0] VER_MAJOR = 3;
 	parameter [3:0] VER_MINOR = 8 + (BUF_PER_EVENT == "SINGLE");
-	parameter [7:0] VER_REV = 21;
+	parameter [7:0] VER_REV = 22;
 	parameter [3:0] VER_BOARDREV = 4'h0;
 	parameter [31:0] VERSION = {VER_BOARDREV,VER_MONTH,VER_DAY,VER_MAJOR,VER_MINOR,VER_REV};
 
