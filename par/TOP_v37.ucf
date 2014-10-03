@@ -325,6 +325,6 @@ TIMESPEC "TS_TRIG_COUNTER_FALSE" = FROM FFS("u_trigger_interface/u_timebase/coun
 # Event details. 
 TIMESPEC TS_PATTERN_MULTIPATH = FROM FFS("u_trigger_interface/u_trigger/*pol_pat*") TO "RAMS" TS_CLK125 * 1.5;
 TIMESPEC TS_CLOCK_MULTIPATH = FROM FFS("u_trigger_interface/u_timebase/event_*") TO "RAMS" TS_CLK125 * 1.5;
-TIMESPEC TS_BUFFER_MULTIPATH = FROM FFS("u_trigger_interface/u_buffer_manager/*") TO "RAMS" TS_CLK125 * 1.5;
+TIMESPEC TS_BUFFER_MULTIPATH = FROM FFS("u_trigger_interface*u_buffer_manager/*") TO "RAMS" TS_CLK125 * 1.5;
 
 TIMEGRP "HOLDGRP" OFFSET = OUT 8.125 ns AFTER "CLK125_P" RISING;
