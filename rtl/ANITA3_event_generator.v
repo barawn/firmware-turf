@@ -192,7 +192,7 @@ module ANITA3_event_generator(
    endgenerate
 	wire cmd_debug;
 
-	SURF_command_interface_v3 u_command(.clk_i(clk33_i),
+	SURF_command_interface_v2 u_command(.clk_i(clk33_i),
 												.start_i((state == START_EVENT) || (state == WAIT_2)),
 												.event_id_i(next_event_id),
 												.buffer_i(buffer_decoder),
