@@ -17,6 +17,7 @@ module ANITA3_simple_trigger( clk250_i,
 										clk250b_i,
 										clk33_i,
 										L1_i,
+                              L1B_i,
 										trig_o,
 										scal_o,
 										scal_L1_o,
@@ -37,6 +38,7 @@ module ANITA3_simple_trigger( clk250_i,
 	input clk250b_i;
 	input clk33_i;
    input [NUM_SURFS*NUM_TRIG-1:0] L1_i;
+   input [NUM_SURFS*NUM_TRIG-1:0] L1B_i;
 	input [2*NUM_PHI-1:0] ant_mask_i;
 	input [2*NUM_PHI-1:0] phi_mask_i;
    output 			  trig_o;
@@ -53,13 +55,17 @@ module ANITA3_simple_trigger( clk250_i,
 	
 	wire [NUM_PHI-1:0] V_pol_phi;
 	wire [NUM_PHI-1:0] H_pol_phi;
-
+   wire [NUM_PHI-1:0] V_pol_phi_scal;
+   wire [NUM_PHI-1:0] H_pol_phi_scal;
 	ANITA3_simple_trigger_map u_map(.clk250_i(clk250_i),
 											  .clk250b_i(clk250b_i),
 											  .mask_i(ant_mask_i),
 											  .L1_i(L1_i),
+                                   .L1B_i(L1B_i),
 											  .V_pol_phi_o(V_pol_phi),
-											  .H_pol_phi_o(H_pol_phi));
+											  .H_pol_phi_o(H_pol_phi),
+                                   .V_pol_phi_sc_o(V_pol_phi_scal),
+                                   .H_pol_phi_sc_o(H_pol_phi_scal));
 	reg [NUM_PHI-1:0] V_pol_trig = {NUM_PHI{1'b0}};
 	reg [NUM_PHI-1:0] H_pol_trig = {NUM_PHI{1'b0}};
 	
@@ -88,9 +94,9 @@ module ANITA3_simple_trigger( clk250_i,
 	generate
 		genvar i;
 		for (i=0;i<NUM_PHI;i=i+1) begin : RF_TRIG
-			srl_oneshot l1v_scaler(.clk250_i(clk250_i),.trig_i(V_pol_phi[i]), 
+			srl_oneshot l1v_scaler(.clk250_i(clk250_i),.trig_i(V_pol_phi_scal[i]), 
 													.scal_o(scal_L1_o[i]));
-			srl_oneshot l1h_scaler(.clk250_i(clk250_i),.trig_i(H_pol_phi[i]), 
+			srl_oneshot l1h_scaler(.clk250_i(clk250_i),.trig_i(H_pol_phi_scal[i]), 
 													.scal_o(scal_L1_o[NUM_PHI+i]));
 
 			srl_oneshot_with_ref v_scaler(.clk250_i(clk250_i),.trig_i(V_pol_trig[i]),.pulse_i(refpulse_i), 

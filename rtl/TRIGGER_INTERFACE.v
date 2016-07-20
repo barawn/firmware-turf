@@ -15,6 +15,7 @@ module TRIGGER_INTERFACE( clk33_i,
 			  clk250_i,
 			  clk250b_i,
 			  L1_i,
+           L1B_i,
 			  HOLD_o,
 			  CMD_o,
 
@@ -62,6 +63,7 @@ module TRIGGER_INTERFACE( clk33_i,
 	input clk250_i;
 	input clk250b_i;
    input [NUM_SURFS*NUM_TRIG-1:0] L1_i;
+   input [NUM_SURFS*NUM_TRIG-1:0] L1B_i;
    output [NUM_SURFS*NUM_HOLD-1:0] HOLD_o;
    output [NUM_SURFS-1:0] 	   CMD_o;
 
@@ -160,6 +162,7 @@ module TRIGGER_INTERFACE( clk33_i,
 											  .refpulse_i(refpulse_i),
 											  .mon_scal_o(phi_mon_scaler),
 											  .L1_i(L1_i),
+                                   .L1B_i(L1B_i),
 											  .trig_o(rf_trigger),
 											  .phi_o(phi_pattern),
 											  .count_o(rf_count));

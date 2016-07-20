@@ -14,9 +14,12 @@ module ANITA3_simple_trigger_map(
 		clk250_i,
 		clk250b_i,
 		L1_i,
+      L1B_i,
 		mask_i,
 		V_pol_phi_o,
-		H_pol_phi_o
+      V_pol_phi_sc_o,
+		H_pol_phi_o,
+      H_pol_phi_sc_o
     );
 
 	parameter NUM_SURFS = 12;
@@ -25,21 +28,31 @@ module ANITA3_simple_trigger_map(
 	input clk250_i;
 	input clk250b_i;
 	input [NUM_SURFS*NUM_TRIG-1:0] L1_i;
+   input [NUM_SURFS*NUM_TRIG-1:0] L1B_i;
 	input [2*NUM_PHI-1:0] mask_i;
-	output [NUM_PHI-1:0] V_pol_phi_o;
+	
+   output [NUM_PHI-1:0] V_pol_phi_o;
+   output [NUM_PHI-1:0] V_pol_phi_sc_o;
+   
 	output [NUM_PHI-1:0] H_pol_phi_o;
+   output [NUM_PHI-1:0] H_pol_phi_sc_o;
+   
 	wire [NUM_PHI-1:0] V_pol_phi_in;
+   wire [NUM_PHI-1:0] V_pol_phi_sc;
 	wire [NUM_PHI-1:0] H_pol_phi_in;
+   wire [NUM_PHI-1:0] H_pol_phi_sc;
 	
 	// Remap to SURFs.
 	wire [NUM_TRIG-1:0] SURF_L1[NUM_SURFS-1:0];
+   wire [NUM_TRIG-1:0] SURF_L1B[NUM_SURFS-1:0];
 	generate
 		genvar s;
 		for (s=0;s<NUM_SURFS;s=s+1) begin : SL
 			assign SURF_L1[s] = L1_i[4*s +: 4];
+         assign SURF_L1B[s] = L1B_i[4*s +: 4];
 		end
 	endgenerate
-		
+		      
 	wire [NUM_PHI-1:0] V_pol_mask = mask_i[0 +: NUM_PHI];
 	wire [NUM_PHI-1:0] H_pol_mask = mask_i[NUM_PHI +: NUM_PHI];
 	
@@ -47,71 +60,80 @@ module ANITA3_simple_trigger_map(
 	reg [NUM_PHI-1:0] V_pol_phi_reg = {NUM_PHI{1'b0}};
 	(* IOB = "TRUE" *)
 	reg [NUM_PHI-1:0] H_pol_phi_reg = {NUM_PHI{1'b0}};
+
+   (* IOB = "TRUE" *)
+   reg [NUM_PHI-1:0] V_pol_phi_scal_reg = {NUM_PHI{1'b0}};
+   (* IOB = "TRUE" *)
+   reg [NUM_PHI-1:0] H_pol_phi_scal_reg = {NUM_PHI{1'b0}};
 	
 	reg [NUM_PHI-1:0] V_pol_phi_pipe = {NUM_PHI{1'b0}};
 	reg [NUM_PHI-1:0] H_pol_phi_pipe = {NUM_PHI{1'b0}};
 
-	assign V_pol_phi_in[0] = SURF_L1[2][0];
-	assign V_pol_phi_in[4] = SURF_L1[2][1];
-	assign H_pol_phi_in[0] = SURF_L1[2][2];
-	assign H_pol_phi_in[4] = SURF_L1[2][3];
+   function [4:0] phi_map;
+      input integer surf;
+      input integer num;
+      begin
+         surf = surf + 1;         
+         // This default will throw an error if you use this function wrong.
+         phi_map = 17;
+         if (surf == 3) begin
+            if (num == 0) phi_map = 1; //1;
+            if (num == 1) phi_map = 2; //5;
+         end else
+         if (surf == 4) begin
+            if (num == 0) phi_map = 9; //3;
+            if (num == 1) phi_map = 10;//7;
+         end else
+         if (surf == 5) begin
+            if (num == 0) phi_map = 3; //2;
+            if (num == 1) phi_map = 4; //6;
+         end else
+         if (surf == 6) begin
+            if (num == 0) phi_map = 11;//4;
+            if (num == 1) phi_map = 12;//8;
+         end else
+         if (surf == 7) begin
+            if (num == 0) phi_map = 5; //16;
+            if (num == 1) phi_map = 6; //12;
+         end else
+         if (surf == 8) begin
+            if (num == 0) phi_map = 13;//14;
+            if (num == 1) phi_map = 14;//10;
+         end else 
+         if (surf == 9) begin
+            if (num == 0) phi_map = 7; //15;
+            if (num == 1) phi_map = 8; //11;
+         end else
+         if (surf == 10) begin
+            if (num == 0) phi_map = 15;//13;
+            if (num == 1) phi_map = 16;//9;
+         end
+         phi_map = phi_map - 1;
+      end
+   endfunction
+   
+   localparam TRIGGER_SURF_START = 2;
+   localparam TRIGGER_SURF_END = 9;
 
-	// TEMPORARY MOVE!!!!
-	// SURF 3 should have phi sectors 2 and 6.
-	// SURF 3 should have phi sectors 1 and 5.
-	
-	// We're temporarily switching phi sectors 2 and 5.
-// CORRECT
-	assign V_pol_phi_in[2] = SURF_L1[3][0];
-	assign V_pol_phi_in[6] = SURF_L1[3][1];
-	assign H_pol_phi_in[2] = SURF_L1[3][2];
-	assign H_pol_phi_in[6] = SURF_L1[3][3];
-
-	assign V_pol_phi_in[1] = SURF_L1[4][0];
-	assign V_pol_phi_in[5] = SURF_L1[4][1];
-	assign H_pol_phi_in[1] = SURF_L1[4][2];
-	assign H_pol_phi_in[5] = SURF_L1[4][3];
-
-// WRONG
-//	assign V_pol_phi_in[5] = SURF_L1[3][0];
-//	assign V_pol_phi_in[6] = SURF_L1[3][1];
-//	assign H_pol_phi_in[5] = SURF_L1[3][2];
-//	assign H_pol_phi_in[6] = SURF_L1[3][3];
-//
-//	assign V_pol_phi_in[1] = SURF_L1[4][0];
-//	assign V_pol_phi_in[2] = SURF_L1[4][1];
-//	assign H_pol_phi_in[1] = SURF_L1[4][2];
-//	assign H_pol_phi_in[2] = SURF_L1[4][3];
-
-	assign V_pol_phi_in[3] = SURF_L1[5][0];
-	assign V_pol_phi_in[7] = SURF_L1[5][1];
-	assign H_pol_phi_in[3] = SURF_L1[5][2];
-	assign H_pol_phi_in[7] = SURF_L1[5][3];
-
-	assign V_pol_phi_in[15] = SURF_L1[6][0];
-	assign V_pol_phi_in[11] = SURF_L1[6][1];
-	assign H_pol_phi_in[15] = SURF_L1[6][2];
-	assign H_pol_phi_in[11] = SURF_L1[6][3];
-
-	assign V_pol_phi_in[13] = SURF_L1[7][0];
-	assign V_pol_phi_in[9] = SURF_L1[7][1];
-	assign H_pol_phi_in[13] = SURF_L1[7][2];
-	assign H_pol_phi_in[9] = SURF_L1[7][3];
-
-	assign V_pol_phi_in[14] = SURF_L1[8][0];
-	assign V_pol_phi_in[10] = SURF_L1[8][1];
-	assign H_pol_phi_in[14] = SURF_L1[8][2];
-	assign H_pol_phi_in[10] = SURF_L1[8][3];
-
-	assign V_pol_phi_in[12] = SURF_L1[9][0];
-	assign V_pol_phi_in[8] = SURF_L1[9][1];
-	assign H_pol_phi_in[12] = SURF_L1[9][2];
-	assign H_pol_phi_in[8] = SURF_L1[9][3];
-
-	generate
+   generate
+      genvar i;
 		genvar j;
+      for (i=TRIGGER_SURF_START;i<=TRIGGER_SURF_END;i=i+1) begin : MAP
+         assign V_pol_phi_in[phi_map(i,0)] = SURF_L1[i][0];
+         assign V_pol_phi_sc[phi_map(i,0)] = SURF_L1B[i][0];
+         assign V_pol_phi_in[phi_map(i,1)] = SURF_L1[i][2];
+         assign V_pol_phi_sc[phi_map(i,1)] = SURF_L1B[i][2];
+         // These --technically-- do entirely nothing right now.
+         assign H_pol_phi_in[phi_map(i,0)] = SURF_L1[i][1];
+         assign H_pol_phi_sc[phi_map(i,0)] = SURF_L1B[i][1];
+         assign H_pol_phi_in[phi_map(i,1)] = SURF_L1[i][3];
+         assign H_pol_phi_sc[phi_map(i,1)] = SURF_L1B[i][3];
+      end
 		for (j=0;j<NUM_PHI;j=j+1) begin : PHI
 			always @(posedge clk250_i) begin : IFF
+            V_pol_phi_scal_reg[j] <= ~V_pol_phi_sc[j];
+            H_pol_phi_scal_reg[j] <= ~H_pol_phi_sc[j];
+            
 				if (V_pol_mask[j]) V_pol_phi_reg[j] <= 0;
 				else V_pol_phi_reg[j] <= V_pol_phi_in[j];
 					
@@ -125,6 +147,8 @@ module ANITA3_simple_trigger_map(
 	endgenerate
 
 	assign V_pol_phi_o = V_pol_phi_pipe;
+   assign V_pol_phi_sc_o = V_pol_phi_scal_reg;
+   
 	assign H_pol_phi_o = H_pol_phi_pipe;
-	
+	assign H_pol_phi_sc_o = H_pol_phi_scal_reg;
 endmodule

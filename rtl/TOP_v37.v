@@ -49,17 +49,18 @@ module TOP_v37(
 
    parameter BUF_PER_EVENT = "SINGLE";
 	parameter DEBUG = "YES";
-	parameter [3:0] VER_MONTH = 11;
-	parameter [7:0] VER_DAY = 17;
-	parameter [3:0] VER_MAJOR = 3;
-	parameter [3:0] VER_MINOR = 8 + (BUF_PER_EVENT == "SINGLE");
-	parameter [7:0] VER_REV = 23;
+	parameter [3:0] VER_MONTH = 7;
+	parameter [7:0] VER_DAY = 20;
+	parameter [3:0] VER_MAJOR = 4;
+	parameter [3:0] VER_MINOR = 0;
+   parameter [7:0] VER_REV = 0;
 	parameter [3:0] VER_BOARDREV = 4'h0;
 	parameter [31:0] VERSION = {VER_BOARDREV,VER_MONTH,VER_DAY,VER_MAJOR,VER_MINOR,VER_REV};
 
 
 	// Infrastructure.
 	wire [`NUM_SURFS*4-1:0] L1;
+   wire [`NUM_SURFS*4-1:0] L1_B;
 	wire [`NUM_SURFS*4-1:0] HOLD;
 	wire [`NUM_SURFS-1:0] CMD;
 	wire [`NUM_SURFS-1:0] SURF_REF_PULSE;
@@ -70,7 +71,7 @@ module TOP_v37(
 	wire dcm_reset;
 	wire [2:0] dcm_status;
 	
-	TURF_infrastructure #(.NUM_SURFS(`NUM_SURFS)) u_turf_if(.L1_P(L1_P),.L1_N(L1_N),.L1(L1),
+	TURF_infrastructure #(.NUM_SURFS(`NUM_SURFS)) u_turf_if(.L1_P(L1_P),.L1_N(L1_N),.L1(L1),.L1_B(L1_B),
 																	.dcm_reset_i(dcm_reset),
 																	.dcm_status_o(dcm_status),
 																	.HOLD_P(HOLD_P),.HOLD_N(HOLD_N),.HOLD(HOLD),
@@ -163,7 +164,7 @@ module TOP_v37(
 													  .clk125_i(CLK125),
 													  .clk250_i(CLK250),
 													  .clk250b_i(CLK250B),
-													  .L1_i(L1),
+													  .L1_i(L1),.L1B_i(L1_B),
 													  .HOLD_o(HOLD),
 													  .CMD_o(CMD),
 													  

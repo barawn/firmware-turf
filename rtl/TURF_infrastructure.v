@@ -11,7 +11,7 @@
 // Author:
 ////////////////////////////////////////////////////////////////////////////////
 module TURF_infrastructure(
-		L1_P, L1_N, L1,
+		L1_P, L1_N, L1, L1_B,
 		HOLD_P, HOLD_N, HOLD,
 		CMD_P, CMD_N, CMD,
 		SURF_CLK_P, SURF_CLK_N,
@@ -28,6 +28,7 @@ module TURF_infrastructure(
 	input [NUM_TRIG*NUM_SURFS-1:0] L1_P;
 	input [NUM_TRIG*NUM_SURFS-1:0] L1_N;
 	output [NUM_TRIG*NUM_SURFS-1:0] L1;
+   output [NUM_TRIG*NUM_SURFS-1:0] L1_B;
 	output [NUM_HOLD*NUM_SURFS-1:0] HOLD_P;
 	output [NUM_HOLD*NUM_SURFS-1:0] HOLD_N;
 	input [NUM_HOLD*NUM_SURFS-1:0] HOLD;
@@ -96,7 +97,7 @@ module TURF_infrastructure(
 		genvar i,j,k;
 		for (i=0;i<NUM_SURFS;i=i+1) begin : SURF
 			for (j=0;j<NUM_TRIG;j=j+1) begin : TRIG
-				IBUFDS u_trig(.I(L1_P[NUM_TRIG*i+j]),.IB(L1_N[NUM_TRIG*i+j]),.O(L1[4*i+j]));
+				IBUFDS_DIFF_OUT u_trig(.I(L1_P[NUM_TRIG*i+j]),.IB(L1_N[NUM_TRIG*i+j]),.O(L1[4*i+j]),.OB(L1_B[4*i+j]));
 			end
 			for (k=0;k<NUM_HOLD;k=k+1) begin : HOLD_1
 				OBUFDS u_hold(.I(HOLD[NUM_HOLD*i+k]),.O(HOLD_P[NUM_HOLD*i+k]),.OB(HOLD_N[4*i+k]));
