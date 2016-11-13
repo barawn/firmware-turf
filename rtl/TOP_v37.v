@@ -49,11 +49,11 @@ module TOP_v37(
 
    parameter BUF_PER_EVENT = "SINGLE";
 	parameter DEBUG = "YES";
-	parameter [3:0] VER_MONTH = 7;
-	parameter [7:0] VER_DAY = 20;
+	parameter [3:0] VER_MONTH = 11;
+	parameter [7:0] VER_DAY = 11;
 	parameter [3:0] VER_MAJOR = 4;
 	parameter [3:0] VER_MINOR = 0;
-   parameter [7:0] VER_REV = 0;
+   parameter [7:0] VER_REV = 1;
 	parameter [3:0] VER_BOARDREV = 4'h0;
 	parameter [31:0] VERSION = {VER_BOARDREV,VER_MONTH,VER_DAY,VER_MAJOR,VER_MINOR,VER_REV};
 

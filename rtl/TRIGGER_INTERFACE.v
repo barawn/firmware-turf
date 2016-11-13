@@ -99,6 +99,7 @@ module TRIGGER_INTERFACE( clk33_i,
 
 	output [34:0] debug_o;
 	wire rf_trigger;
+   wire rf_trigger_scaler;
 
 	wire digitize;
    wire [1:0] 			   digitize_buffer;
@@ -157,6 +158,7 @@ module TRIGGER_INTERFACE( clk33_i,
 											  .ant_mask_i(ant_mask_i),
 											  .phi_mask_i(phi_mask_i),
 											  .disable_i(disable_i),
+                                   .rf_scal_o(rf_trigger_scaler),
 											  .scal_o(phi_scaler),
 											  .scal_L1_o(L1_scaler),
 											  .refpulse_i(refpulse_i),
@@ -295,6 +297,7 @@ module TRIGGER_INTERFACE( clk33_i,
 
 	ANITA3_scalers u_scalers(.clk33_i(clk33_i),
 									 .refpulse_i(refpulse_i),
+                            .RF_i(rf_trigger_scaler),
 									 .L3_i(phi_scaler),
 									 .L3_mon_i(phi_mon_scaler),
 									 .L1_i(L1_scaler),

@@ -12,6 +12,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 module ANITA3_scalers(
 		clk33_i,
+      RF_i,
 		L3_i,
 		L3_mon_i,
 		L1_i,
@@ -27,11 +28,11 @@ module ANITA3_scalers(
 	parameter NUM_PHI = 16;
 
 	input clk33_i;
+   input RF_i;
 	input [2*NUM_PHI-1:0] L3_i;
 	input [2*NUM_PHI-1:0] L3_mon_i;
 	
 	input [2*NUM_PHI-1:0] L1_i;
-	
 	
 	input refpulse_i;
 	input pps_i;
@@ -69,6 +70,12 @@ module ANITA3_scalers(
 											  .pps_i(pps_i),
 											  .count_i(refpulse_reg[0] && !refpulse_reg[1]),
 											  .scaler_o(refpulse_scaler));
+   wire [15:0] rf_scaler;
+   ANITA3_scaler #(.WIDTH(16),.PRESCALE(0)) u_scaler_rf(.clk_i(clk33_i),
+                             .pps_i(pps_i),
+                             .count_i(RF_i),
+                             .scaler_o(rf_scaler));
+                             
 	// 64 overall scalers, but they map to 16 total addresses.
 	wire [7:0] l3_scalers_hold[4*NUM_PHI-1:0];	
 	// 32 L1 scalers, mapping to 16 addresses
@@ -135,6 +142,7 @@ module ANITA3_scalers(
 		end
 	endgenerate
 
+   wire [1:0] aux_scaler_switch = {scal_addr_i[2],scal_addr_i[0]};
 	
 	always @(posedge clk33_i) begin
 		refpulse_reg <= {refpulse_reg[0],refpulse_i};
@@ -156,9 +164,10 @@ module ANITA3_scalers(
 //		if (!scal_addr_i[5]) output_data <= l3_scalers_mux;
 		if (!scal_addr_i[5]) output_data <= l1_l3_scalers_mux;
 		else begin
-			if (!scal_addr_i[0]) output_data <= refpulse_scaler;
-			else if (!scal_addr_i[2]) output_data <= {sec_i,deadtime_i};
-			else output_data <= c3po_i;
+         if (aux_scaler_switch == 2'b00) output_data <= refpulse_scaler;
+         else if (aux_scaler_switch == 2'b01) output_data <= {sec_i, deadtime_i};
+         else if (aux_scaler_switch == 2'b10) output_data <= rf_scaler;
+         else output_data <= c3po_i;
 		end
 	end
 	

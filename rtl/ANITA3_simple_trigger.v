@@ -19,6 +19,7 @@ module ANITA3_simple_trigger( clk250_i,
 										L1_i,
                               L1B_i,
 										trig_o,
+                              rf_scal_o,
 										scal_o,
 										scal_L1_o,
 										disable_i,
@@ -45,6 +46,7 @@ module ANITA3_simple_trigger( clk250_i,
 	output [2*NUM_PHI-1:0] phi_o;
 	output [2*NUM_PHI-1:0] scal_o;
 	output [2*NUM_PHI-1:0] scal_L1_o;
+   output rf_scal_o;
 	
 	
 	
@@ -91,6 +93,10 @@ module ANITA3_simple_trigger( clk250_i,
 	reg [7:0] rf_count = {8{1'b0}};	
 	reg trig_disable = 0;
 	
+   reg trigger_flagged = 0;
+   wire trigger_flagged_clk33;
+   wire trigger_acked;
+   
 	generate
 		genvar i;
 		for (i=0;i<NUM_PHI;i=i+1) begin : RF_TRIG
@@ -135,8 +141,16 @@ module ANITA3_simple_trigger( clk250_i,
 		
 		if (rf_count_flag) raw_rf_count <= raw_rf_count + 1;
 		if (rf_count_flag && trigger_holdoff) rf_count <= raw_rf_count;
+      
+      if (trigger_acked) trigger_flagged <= 0;
+      else if (rf_count_flag) trigger_flagged <= 1;
 	end
 	
+   flag_sync u_trigger_scaler(.in_clkA(rf_count_flag && !trigger_flagged),.clkA(clk250_i),
+                              .out_clkB(rf_scal_o),.clkB(clk33_i));
+   flag_sync u_trigger_scaler_ack(.in_clkA(rf_scal_o),.clkA(clk33_i),
+                                  .out_clkB(trigger_acked),.clkB(clk250_i));
+                                  
 	ANITA3_trigger_holdoff u_rf_holdoff(.clk250_i(clk250_i),
 													.trig_i(V_rf_trigger | H_rf_trigger),
 													.holdoff_o(trigger_holdoff));

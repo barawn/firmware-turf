@@ -40,6 +40,8 @@ module ANITA3_buffer_manager(
    reg 	     trigger_dead = 0;
 	reg [NUM_HOLD-1:0] buffer_status = {NUM_HOLD{BUFFER_FREE}};
 	wire trigger_holdoff;
+
+   integer i;
 	
    always @(posedge rst_i or posedge clk250_i) begin
 		if(rst_i)
@@ -56,8 +58,14 @@ module ANITA3_buffer_manager(
 				trig_all <= !trig_all && |trig_i && !trigger_dead && !trigger_holdoff;
 				trig_store <= trig_i;
 				if (trig_all) trig_source <= trig_store;
-				if (clear_i) held_buffers[clear_buffer_i] <= BUFFER_FREE;
-				else if (trig_all) held_buffers[current_buffer] <= BUFFER_HELD;
+
+            for (i=0;i<NUM_HOLD;i=i+1) begin : BUFFER_LOOP
+               if (clear_buffer_i == i && clear_i) held_buffers[i] <= BUFFER_FREE;
+               else if (current_buffer == i && trig_all) held_buffers[i] <= BUFFER_HELD;
+            end
+            
+//				if (clear_i) held_buffers[clear_buffer_i] <= BUFFER_FREE;
+//				else if (trig_all) held_buffers[current_buffer] <= BUFFER_HELD;
 
             trigger_dead <= (held_buffers == {4{BUFFER_HELD}});
 				
