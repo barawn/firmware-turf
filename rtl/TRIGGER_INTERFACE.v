@@ -14,8 +14,8 @@ module TRIGGER_INTERFACE( clk33_i,
 			  clk125_i,
 			  clk250_i,
 			  clk250b_i,
-			  L1_i,
-           L1B_i,
+			  L2_i,
+           L2B_i,
 			  HOLD_o,
 			  CMD_o,
 
@@ -62,8 +62,8 @@ module TRIGGER_INTERFACE( clk33_i,
    input clk125_i;
 	input clk250_i;
 	input clk250b_i;
-   input [NUM_SURFS*NUM_TRIG-1:0] L1_i;
-   input [NUM_SURFS*NUM_TRIG-1:0] L1B_i;
+   input [NUM_SURFS*NUM_TRIG-1:0] L2_i;
+   input [NUM_SURFS*NUM_TRIG-1:0] L2B_i;
    output [NUM_SURFS*NUM_HOLD-1:0] HOLD_o;
    output [NUM_SURFS-1:0] 	   CMD_o;
 
@@ -100,7 +100,8 @@ module TRIGGER_INTERFACE( clk33_i,
 	output [34:0] debug_o;
 	wire rf_trigger;
    wire rf_trigger_scaler;
-
+   wire gated_rf_scaler;
+   
 	wire digitize;
    wire [1:0] 			   digitize_buffer;
 	wire [3:0]				digitize_source;
@@ -114,7 +115,7 @@ module TRIGGER_INTERFACE( clk33_i,
 	wire [2*NUM_PHI-1:0] phi_scaler;	
 	wire [2*NUM_PHI-1:0] phi_mon_scaler;
 
-	wire [2*NUM_PHI-1:0] L1_scaler;	
+	wire [2*NUM_PHI-1:0] L2_scaler;	
 	
 	
 	
@@ -152,19 +153,20 @@ module TRIGGER_INTERFACE( clk33_i,
 												  .deadtime_full_debug(deadtime_full_debug)
 												  );
 
-   ANITA3_simple_trigger u_trigger(.clk33_i(clk33_i),
+   ANITA4_simple_trigger u_trigger(.clk33_i(clk33_i),
 											  .clk250_i(clk250_i),
 											  .clk250b_i(clk250b_i),
 											  .ant_mask_i(ant_mask_i),
 											  .phi_mask_i(phi_mask_i),
 											  .disable_i(disable_i),
                                    .rf_scal_o(rf_trigger_scaler),
+                                   .gated_rf_scal_o(gated_rf_scaler),
 											  .scal_o(phi_scaler),
-											  .scal_L1_o(L1_scaler),
+											  .scal_L2_o(L2_scaler),
 											  .refpulse_i(refpulse_i),
 											  .mon_scal_o(phi_mon_scaler),
-											  .L1_i(L1_i),
-                                   .L1B_i(L1B_i),
+											  .L2_i(L2_i),
+                                   .L2B_i(L2B_i),
 											  .trig_o(rf_trigger),
 											  .phi_o(phi_pattern),
 											  .count_o(rf_count));
@@ -295,12 +297,13 @@ module TRIGGER_INTERFACE( clk33_i,
 
 
 
-	ANITA3_scalers u_scalers(.clk33_i(clk33_i),
+	ANITA4_scalers u_scalers(.clk33_i(clk33_i),
 									 .refpulse_i(refpulse_i),
                             .RF_i(rf_trigger_scaler),
+                            .gated_RF_i(gated_rf_scaler),
 									 .L3_i(phi_scaler),
 									 .L3_mon_i(phi_mon_scaler),
-									 .L1_i(L1_scaler),
+									 .L2_i(L2_scaler),
 									 .pps_i(pps_clk33_i),
 									 .sec_i(current_pps_time),
 									 .deadtime_i(deadtime),
